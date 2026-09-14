@@ -23,7 +23,11 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # `npm ci` exige que el lockfile contenga el árbol EXACTO del runner. Astro arrastra
+      # dependencias opcionales que solo se resuelven en Linux (@emnapi/*), y un lockfile
+      # generado en macOS nunca las incluye: `npm ci` falla en el runner aunque funcione
+      # en local. `npm install` resuelve por plataforma y respeta igual las versiones fijadas.
+      - run: npm install --no-audit --no-fund
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

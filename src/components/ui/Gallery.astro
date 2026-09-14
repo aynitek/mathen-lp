@@ -1,0 +1,64 @@
+---
+/**
+ * Galería secundaria "de planta y obras" (sección `planta-y-obras`).
+ * Fotos de baja calidad (celular, propiedad del cliente): se presentan en formato cuadrado 1:1,
+ * con tratamiento duotono navy/naranja para homogenizar luz y disimular ruido de compresión,
+ * tal como recomienda `_brief/01-contenido-y-estructura.md` sección G.
+ * Rediseño (feedback cliente 13-09-2026): tarjetas más grandes (320-400px en desktop, no 6
+ * columnas apretadas), object-position por foto para que el producto —no una persona ni un
+ * borde vacío— quede protagonista del recorte cuadrado, y una etiqueta que deja explícito que
+ * son fotos reales de planta del cliente (no material de stock).
+ * Máximo 6 fotos, seleccionadas por criterio de foco/encuadre/producto protagonista;
+ * el resto de la ráfaga se descarta (mismo criterio que el documento de contenido).
+ */
+const fotos = [
+  { src: asset('/img/galeria/obra-01.jpg'), caption: 'Paneles sándwich listos para despacho', pos: 'center' },
+  { src: asset('/img/galeria/obra-03.jpg'), caption: 'Corte de un panel sándwich: acero y núcleo aislante a la vista', pos: 'center 70%' },
+  { src: asset('/img/galeria/obra-05.jpg'), caption: 'Camión cargado, listo para salir a obra', pos: '68% center' },
+  { src: asset('/img/galeria/obra-10.jpg'), caption: 'Calaminas prepintadas en formato trapezoidal', pos: 'center 78%' },
+  { src: asset('/img/galeria/obra-20.jpg'), caption: 'Paneles termoaislantes en planta', pos: '65% center' },
+  { src: asset('/img/galeria/obra-22.jpg'), caption: 'Producción en planta: paneles sándwich apilados por lote', pos: 'center 40%' },
+];
+import { asset } from '../../lib/asset';
+---
+
+<div
+  data-reveal-group
+  class="flex lg:grid lg:grid-cols-3 gap-5 overflow-x-auto lg:overflow-visible
+         snap-x snap-mandatory lg:snap-none pb-2 -mx-4 px-4 lg:mx-0 lg:px-0"
+  role="list"
+  aria-label="Fotografías de planta y despacho de obra (propiedad de Mathen Perú)"
+>
+  {
+    fotos.map((foto) => (
+      <figure
+        data-reveal
+        role="listitem"
+        class="group relative shrink-0 snap-start w-[78vw] sm:w-[360px] lg:w-auto aspect-square
+               overflow-hidden rounded-xl border border-ink-700 bg-ink-800
+               transition-colors duration-300 hover:border-orange/40"
+      >
+        <img
+          src={foto.src}
+          alt={foto.caption}
+          loading="lazy"
+          width="400"
+          height="400"
+          style={`object-position: ${foto.pos}`}
+          class="h-full w-full object-cover [filter:grayscale(1)_sepia(0.35)_saturate(1.8)_hue-rotate(160deg)_brightness(0.85)_contrast(1.05)]
+                 group-hover:[filter:none] transition-[filter] duration-300"
+        />
+        <p class="label-tec absolute left-3 top-3 rounded-full border border-white/15 bg-ink-950/70
+                  px-2.5 py-1 text-paper-faint backdrop-blur-sm">
+          Foto de planta — Mathen Perú
+        </p>
+        <figcaption
+          class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink-950/90 to-transparent
+                 px-3 py-2 text-caption text-paper-dim"
+        >
+          {foto.caption}
+        </figcaption>
+      </figure>
+    ))
+  }
+</div>

@@ -1,0 +1,113 @@
+---
+/**
+ * Navegación flotante mínima. Ancla a las 8 secciones canónicas (ver _brief/03-mapa-escenas.md).
+ * En móvil colapsa a un botón de menú compacto (checkbox + <details>, sin JS de framework).
+ */
+const links = [
+  { id: 'hero', label: 'Inicio' },
+  { id: 'la-materia', label: 'Material' },
+  { id: 'como-se-arma', label: 'Sistema' },
+  { id: 'catalogo', label: 'Catálogo' },
+  { id: 'a-tu-medida', label: 'A tu medida' },
+  { id: 'nosotros', label: 'Nosotros' },
+  { id: 'planta-y-obras', label: 'Planta y obras' },
+  { id: 'cotiza-ahora', label: 'Cotiza' },
+];
+import { asset } from '../../lib/asset';
+---
+
+<nav
+  aria-label="Navegación principal"
+  data-nav
+  class="fixed top-4 inset-x-0 mx-auto w-[calc(100%-2rem)] max-w-3xl z-50 flex items-center justify-between
+         gap-2 rounded-full border border-white/10 bg-ink-900/60 backdrop-blur-xl
+         px-3 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.4)]
+         transition-transform duration-300 will-change-transform
+         data-[hidden]:-translate-y-[150%]
+         [body:has(.ficha-stage.is-open)_&]:-translate-y-[150%]
+         [body:has(.ficha-stage.is-open)_&]:pointer-events-none"
+>
+  <a href="#hero" class="flex items-center gap-2 shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-orange" aria-label="Ir al inicio · Mathen Perú">
+    <span class="flex items-center rounded-full bg-paper px-2.5 py-1.5">
+      <img src={asset('/img/logo.png')} alt="Mathen Perú" class="h-5 w-auto" width="1849" height="851" />
+    </span>
+  </a>
+
+  <ul class="hidden md:flex items-center gap-1">
+    {
+      links.slice(1, -1).map((link) => (
+        <li>
+          <a
+            href={`#${link.id}`}
+            class="px-3 py-2 rounded-full text-caption text-paper-dim tracking-[0.04em] uppercase
+                   hover:text-paper hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-orange
+                   transition-colors duration-200"
+          >
+            {link.label}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+
+  <a
+    href="#cotiza-ahora"
+    class="hidden md:inline-flex px-4 py-2 rounded-full text-caption uppercase tracking-[0.04em] bg-orange text-ink-950 font-semibold
+           hover:bg-orange-dim active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper transition-all duration-150"
+  >
+    Cotizar
+  </a>
+
+  <details class="md:hidden relative">
+    <summary
+      class="list-none cursor-pointer rounded-full p-2 text-paper hover:bg-white/5
+             focus-visible:outline-2 focus-visible:outline-orange"
+      aria-label="Abrir menú de navegación"
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </svg>
+    </summary>
+    <ul
+      class="absolute right-0 top-[calc(100%+0.75rem)] w-56 rounded-2xl border border-white/10 bg-ink-900/95
+             backdrop-blur-xl p-2 shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex flex-col gap-0.5"
+    >
+      {
+        links.map((link) => (
+          <li>
+            <a
+              href={`#${link.id}`}
+              class="block px-4 py-2.5 rounded-xl text-body text-paper-dim hover:text-paper hover:bg-white/5
+                     focus-visible:outline-2 focus-visible:outline-orange transition-colors duration-150"
+            >
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </details>
+</nav>
+
+<script>
+  // La nav flotante tapaba el texto de las secciones al pasar por debajo.
+  // Se esconde al bajar y vuelve al subir (o al llegar arriba del todo).
+  const nav = document.querySelector('[data-nav]');
+  if (nav && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let last = window.scrollY;
+    let ticking = false;
+    const update = () => {
+      const y = window.scrollY;
+      const bajando = y > last && y > 120;
+      // No esconderla si el menú móvil está abierto.
+      const abierto = nav.querySelector('details[open]');
+      if (bajando && !abierto) nav.setAttribute('data-hidden', '');
+      else nav.removeAttribute('data-hidden');
+      last = y;
+      ticking = false;
+    };
+    window.addEventListener('scroll', () => {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }, { passive: true });
+  }
+</script>

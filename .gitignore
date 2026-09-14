@@ -1,0 +1,19 @@
+# dependencias
+node_modules/
+
+# build
+dist/
+.astro/
+
+# entorno
+.env
+.env.production
+
+# sistema
+.DS_Store
+*.log
+npm-debug.log*
+
+# editores
+.vscode/
+.idea/

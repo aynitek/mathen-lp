@@ -1,0 +1,163 @@
+---
+/**
+ * Escena 5/8 — `a-tu-medida` (scroll global 0.62–0.74).
+ * 3D: geometría paramétrica, largo y espesor cambian en vivo con líneas de cota naranjas.
+ *
+ * REDISEÑO (feedback cliente 13-09-2026): "siento su parte derecha como vacía". A
+ * diferencia de `como-se-arma` (contador de espesor de núcleo a la derecha) y
+ * `la-materia` (pines de anotación sobre el 3D), aquí las cotas vivían debajo del
+ * texto en la columna izquierda — la mitad derecha del encuadre quedaba sin nada.
+ * Se reequilibra a dos columnas: el texto se mantiene a la izquierda, y el plano
+ * de cotas (dibujo técnico de la plancha, con líneas DrawSVG) pasa a la derecha,
+ * grande y protagonista — mismo lenguaje que las otras dos escenas de columna
+ * izquierda. Los cuatro datos (largo, formato, espesor, acabado) son reales,
+ * tomados de `productos.json` (calamina-plancha-aluzinc-az150): el largo no tiene
+ * cifra fija porque se fabrica a medida del cliente, eso ES el mensaje.
+ *
+ * Nota sobre el defecto de cotas desparejas del diseño anterior: el diagrama viejo
+ * tenía 4 filas × 3 <path data-draw> = 12 trazos, más 13 ticks + 1 línea de la regla
+ * decorativa del pie = 26 elementos compartiendo un solo `ScrollTrigger.batch` con
+ * `stagger: 0.15`. La cola total (26 × 0.15 ≈ 3.9s) hacía que las últimas filas
+ * (Formato, Acabado) quedaran a medio dibujar en cualquier captura tomada poco
+ * después de entrar en vista. Aquí el diagrama usa solo 3 trazos (marco de esquinas,
+ * cota de Largo, cota de Formato) y la regla decorativa combina sus 13 ticks en un
+ * solo <path> — la cola de stagger baja a ~5 elementos, ~0.75s: las cuatro cotas
+ * terminan de dibujarse juntas y completas.
+ */
+import Button from '../components/ui/Button.astro';
+import MotionMarquee from '../components/ui/MotionMarquee.astro';
+import productos from '../data/productos.json';
+
+const plancha = productos.find((p) => p.id === 'calamina-plancha-aluzinc-az150')!;
+const formato = plancha.specs.find((s) => s.etiqueta === 'Formato')!;
+const acabado = plancha.specs.find((s) => s.etiqueta === 'Acabado')!;
+
+const cotas = ['Largo', 'Formato', 'Espesor', 'Acabado'];
+const tickerItems = cotas.map((c) => `${c.toUpperCase()} → A MEDIDA`);
+
+// Regla graduada decorativa: 13 ticks combinados en un único <path> (ver nota arriba).
+const rulerTicks = Array.from({ length: 13 })
+  .map((_, i) => `M${i * 100},${i % 3 === 0 ? 3 : 7} L${i * 100},${i % 3 === 0 ? 21 : 17}`)
+  .join(' ');
+---
+
+<section id="a-tu-medida" class="relative z-10 min-h-[120vh] flex items-center bg-transparent px-6 py-24 overflow-hidden">
+  <div class="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] bg-gradient-to-r from-ink-950/95 from-30% via-ink-950/88 via-60% to-transparent" aria-hidden="true"></div>
+
+  <div class="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
+    <div data-reveal-group class="relative">
+      <h2 data-reveal data-split="lines" class="text-balance on-canvas font-display font-semibold text-display-lg leading-[1] tracking-[-0.02em] text-paper">
+        Se fabrica a la medida de tu obra
+      </h2>
+
+      <p data-reveal class="mt-6 text-body-lg text-paper-dim">
+        Formato, largo, espesor y acabado se definen según tu proyecto. No trabajamos con medidas estándar de catálogo.
+      </p>
+
+      <p data-reveal class="mt-4 text-body text-paper-dim">
+        Calaminas rectas o curvas, paneles con el núcleo y el peralte que tu techo o muro requiere, placas
+        colaborantes en el largo continuo que pida tu losa. Tú defines la medida; nosotros la fabricamos.
+      </p>
+
+      <div data-reveal class="mt-8">
+        <Button href="#cotiza-ahora" variant="primary">Cuéntanos tu proyecto</Button>
+      </div>
+    </div>
+
+    <!-- Plano de cotas: la plancha acotada, protagonista de la columna derecha -->
+    <div data-reveal-group class="relative">
+      <div class="rounded-2xl border border-ink-700 bg-ink-900/50 backdrop-blur-sm p-6 sm:p-8">
+        <div class="flex items-stretch gap-4 sm:gap-6">
+          <!-- Plancha con marco de esquinas + cota de Largo -->
+          <div data-reveal class="relative min-w-0 flex-1 aspect-[4/3]">
+            <svg class="absolute inset-0 h-full w-full overflow-visible text-orange" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+              <path
+                data-draw
+                d="M60,90 L60,60 L90,60 M310,60 L340,60 L340,90 M60,210 L60,240 L90,240 M340,210 L340,240 L310,240"
+                vector-effect="non-scaling-stroke"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                opacity="0.6"
+              />
+              <path
+                data-draw
+                d="M60,60 L60,30 M60,30 L340,30 M340,30 L340,60"
+                vector-effect="non-scaling-stroke"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+            </svg>
+            <span class="label-tec absolute text-orange" style="top:2%; left:50%; transform:translate(-50%,-100%);">
+              Largo · a medida
+            </span>
+          </div>
+
+          <!-- Cota de Formato, en el margen derecho -->
+          <div class="flex shrink-0 items-stretch gap-3">
+            <svg class="w-3 text-orange" viewBox="0 0 12 100" preserveAspectRatio="none" aria-hidden="true">
+              <path
+                data-draw
+                d="M2,0 L10,0 M6,0 L6,100 M2,100 L10,100"
+                vector-effect="non-scaling-stroke"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+            </svg>
+            <div class="flex flex-col justify-center gap-1">
+              <span class="label-tec text-orange">Formato</span>
+              <span class="text-caption text-paper-dim">{formato.valor}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Espesor (cifra real, leída del scroll) + Acabado -->
+        <div data-reveal class="mt-8 flex flex-wrap items-end justify-between gap-6 border-t border-ink-700 pt-6">
+          <div>
+            <p class="label-tec text-paper-faint">Espesor</p>
+            <p
+              id="espesor-counter"
+              class="font-display font-semibold text-display-md text-orange tabular-nums tracking-[-0.01em]"
+              style="min-width: 5ch; display: inline-block;"
+            >
+              0.30 mm
+            </p>
+          </div>
+          <p class="label-tec rounded-full border border-ink-600 bg-ink-900/60 px-4 py-1.5 text-paper">
+            Acabado · {acabado.valor}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Regla graduada decorativa: llena el tramo inferior, mismo lenguaje de plano técnico -->
+  <div class="hidden md:block absolute bottom-24 inset-x-0 px-6" aria-hidden="true">
+    <svg class="w-full h-6 text-paper-faint/40" viewBox="0 0 1200 24" preserveAspectRatio="none">
+      <path data-draw d="M0,12 L1200,12" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1" />
+      <path data-draw d={rulerTicks} vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1" />
+    </svg>
+  </div>
+
+  <div class="absolute bottom-8 inset-x-0 px-6">
+    <MotionMarquee items={tickerItems} ariaLabel="Todo se fabrica a la medida del proyecto" />
+  </div>
+</section>
+
+<script>
+  import { revealIn, addDepthParallax } from '../components/ui/scrollReveal';
+  import { drawLinesIn } from '../components/ui/techDraw';
+  import { bindScrubNumber } from '../components/ui/techCounter';
+
+  const root = document.getElementById('a-tu-medida');
+  revealIn(root);
+  drawLinesIn(root);
+  addDepthParallax(root);
+
+  const counter = document.getElementById('espesor-counter');
+  if (root && counter) {
+    bindScrubNumber(counter, root, 0.3, 0.6, ' mm', 2);
+  }
+</script>

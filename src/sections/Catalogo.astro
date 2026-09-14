@@ -1,0 +1,722 @@
+---
+/**
+ * Escena 4/8 — `catalogo` (scroll global 0.42–0.62), la más extensa del storyboard 3D
+ * (perfil que se pliega en techo, policarbonato, placa colaborante — ver mapa-escenas).
+ *
+ * v7 — Correcciones del cliente sobre v6, ver `_brief/07-catalogo-v5.md` (especificación
+ * vinculante, D-A a D-E; reemplaza donde contradiga a `06-catalogo-carrusel.md`):
+ *
+ * D-A: SE ELIMINA el `pin` de ScrollTrigger — era la causa de que el scroll "se
+ * trabara"/"se sintiera forzado" (capturaba el scroll del usuario). El revelado ahora
+ * es una timeline con `scrub` anclada al paso natural de la sección por el viewport,
+ * SIN pin y SIN pin-spacer. La sección scrollea como cualquier otra.
+ *
+ * D-B: VUELVE el filtro de categorías (se había eliminado en v6 — el cliente nunca lo
+ * pidió). Radios nativos + `:has()`. Convive con el carrusel: al cambiar de filtro, el
+ * bucle se reconstruye (Flip anima la transición, sin saltos). ≤3 productos → fila
+ * estática centrada, sin bucle.
+ *
+ * D-C/D-D: el reparto de cartas (mazo apilado → fila) y el reapilado inverso los
+ * calcula CarouselLoop.ts a partir de la tarjeta "principal" medida en vivo (menor
+ * `x`), nunca del índice 0.
+ *
+ * v8 — correcciones finas del cliente sobre v7 (probó el catálogo, confirmó que el
+ * scroll "ya se siente fluido" — eso NO se toca), ver `_brief/08-catalogo-v6.md`:
+ *
+ * F1 ("efecto Flash"): cada `.carousel-slide` ahora envuelve un
+ * `.carousel-slide-inner` (`data-carousel-slide-inner`) — la ranura exterior solo
+ * la mueve el bucle, el envoltorio interior solo el reparto (ver CarouselLoop.ts).
+ * Además, el autoplay ya no arranca solo con el `onLeave`/`onLeaveBack` del scrub:
+ * espera a que el propio scrub deje de tocar el reparto durante `SETTLE_MS` (sin
+ * tween pendiente) antes de soltar el autoplay y las flechas.
+ *
+ * F2 (absorción asimétrica en el borde izquierdo — NO es un fade ni una máscara):
+ * el cliente aclaró dos veces: no quiere un desvanecido (le preocupa esa palabra),
+ * y la absorción "es como si retrocediera el tiempo" del reparto — la MISMA curva
+ * de `setDealProgress` leída hacia atrás, no una animación aparte. El defecto real
+ * (ver CarouselLoop.ts) era que el stagger del reparto indexaba linealmente: la
+ * vecina inmediata por la izquierda de la principal (la del colchón del wrap)
+ * heredaba el `k` más alto de todo el mazo y tenía que recorrer la misma distancia
+ * que su espejo de la derecha en una ventana de progreso mucho más corta — de ahí
+ * que se viera "absorbida de golpe". La corrección usa distancia CIRCULAR a la
+ * principal para el stagger: la vecina inmediata izquierda y la derecha comparten
+ * literalmente el mismo `depth`/ventana — simetría automática, sin mecanismo nuevo.
+ *
+ * F3 (guardado también al salir por abajo): segundo ScrollTrigger (scrub, sin pin)
+ * anclado a `root`, simétrico al de entrada — going hacia abajo lo aleja del
+ * "plateau" central (autoplay) hacia el reparto invertido (guardado); revertir
+ * hacia arriba lo devuelve al plateau (reparte otra vez). Comparte con el trigger
+ * de entrada el mismo mecanismo de "asentado" antes de reactivar el autoplay.
+ *
+ * F4 (fin del reparto ligado al texto): el `end` del scrub de entrada ya no es un
+ * porcentaje arbitrario del viewport del carrusel — es `endTrigger` sobre el
+ * propio `<p>` de la bajada (medido en vivo), así que el reparto termina cuando
+ * ese bloque está asentado en su posición de lectura.
+ */
+import ProductCard from '../components/ui/ProductCard.astro';
+import productos from '../data/productos.json';
+
+// D-B: categorías del filtro restaurado. Un producto puede pertenecer a más de una
+// (p. ej. los paneles sándwich sirven para techo Y muro, según sus propias specs/
+// variantes en productos.json).
+const categorias = [
+  { value: 'todos', label: 'Todos' },
+  { value: 'techos', label: 'Techos' },
+  { value: 'muros', label: 'Muros' },
+  { value: 'estructural', label: 'Estructural' },
+  { value: 'translucidos', label: 'Translúcidos' },
+  { value: 'accesorios', label: 'Accesorios' },
+];
+
+const categoryMap: Record<string, string[]> = {
+  'calamina-plancha-aluzinc-az150': ['techos'],
+  'panel-sandwich-poliuretano': ['techos', 'muros'],
+  'panel-sandwich-poliestireno': ['techos', 'muros'],
+  'placa-colaborante-zincalum': ['estructural'],
+  policarbonato: ['translucidos', 'techos'],
+  'cobertura-termoacustica-upvc': ['translucidos'],
+  'accesorios-obra': ['accesorios'],
+};
+
+// Imágenes de referencia descargadas a public/img/productos/ (Pexels, servidas localmente).
+// Una por línea, para que el producto se reconozca de un vistazo antes de leer un párrafo.
+const imagenMap: Record<string, { src: string; alt: string }> = {
+  'calamina-plancha-aluzinc-az150': {
+    src: asset('/img/productos/calamina-aluzinc.jpg'),
+    alt: 'Planchas onduladas de calamina metálica prepintada, formato trapezoidal, apiladas',
+  },
+  'panel-sandwich-poliuretano': {
+    src: asset('/img/productos/panel-sandwich-poliuretano.jpg'),
+    alt: 'Nave industrial con estructura metálica y cobertura de techo tipo panel sándwich',
+  },
+  'panel-sandwich-poliestireno': {
+    src: asset('/img/productos/panel-sandwich-poliestireno.jpg'),
+    alt: 'Panel sándwich de acero visto de canto, mostrando el núcleo aislante entre las dos caras',
+  },
+  'placa-colaborante-zincalum': {
+    src: asset('/img/productos/placa-colaborante.jpg'),
+    alt: 'Estructura metálica industrial con cobertura de acero corrugado vista desde abajo',
+  },
+  policarbonato: {
+    src: asset('/img/productos/policarbonato.jpg'),
+    alt: 'Planchas de policarbonato translúcido dejando pasar la luz en una cobertura',
+  },
+  'cobertura-termoacustica-upvc': {
+    src: asset('/img/productos/cobertura-upvc.jpg'),
+    alt: 'Cobertura ondulada translúcida tipo UPVC instalada sobre estructura metálica',
+  },
+  'accesorios-obra': {
+    src: asset('/img/productos/accesorios-obra.jpg'),
+    alt: 'Pernos y tuercas de acero, accesorios metálicos para la instalación de coberturas y paneles',
+  },
+};
+import { asset } from '../lib/asset';
+---
+
+<section id="catalogo" class="relative z-10 min-h-screen bg-transparent px-6 py-24" data-catalogo>
+  <div class="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] bg-gradient-to-b from-ink-950/80 via-ink-950/72 to-ink-950/85" aria-hidden="true"></div>
+
+  <div class="relative max-w-6xl mx-auto">
+    <!--
+      Envoltorio de layout (ya NO fijado con pin — D-A). El titular y el carrusel
+      comparten el mismo cuadro vertical en desktop, con el carrusel centrado en el
+      espacio libre debajo del titular (`md:flex-1 md:items-center`).
+    -->
+    <div data-catalogo-frame class="md:flex md:min-h-screen md:flex-col md:justify-center md:gap-8 md:pt-24 md:pb-12">
+      <div data-reveal-group class="max-w-xl">
+        <h2 data-reveal class="on-canvas font-display font-semibold text-display-lg leading-[1] tracking-[-0.02em] text-paper">
+          Siete líneas, un solo proveedor
+        </h2>
+        <p data-reveal class="mt-6 text-body-lg text-paper-dim">
+          Calaminas y planchas, paneles sándwich, placa colaborante, policarbonato y coberturas UPVC, más los
+          accesorios para instalarlos. El catálogo técnico completo, con las medidas reales de cada línea.
+        </p>
+      </div>
+
+      <div class="mt-12 md:mt-0 md:flex md:flex-1 md:flex-col md:items-stretch md:justify-center" data-catalogo-filter-scope>
+        <!--
+          D-B: filtro restaurado (radios nativos + :has()). El HTML servido sigue
+          conteniendo los 7 productos y sus specs completas siempre (requisito SEO):
+          el `display:none` que aplican las reglas :has() de abajo solo alcanza a las
+          tarjetas que el usuario excluyó explícitamente, nunca al marcado en sí.
+        -->
+        <fieldset class="catalogo-filtros" data-catalogo-filtros>
+          <legend class="sr-only">Filtrar catálogo por categoría</legend>
+          {
+            categorias.map((cat, i) => (
+              <span class="filtro-opcion">
+                <input type="radio" name="catalogo-filtro" id={`filtro-${cat.value}`} value={cat.value} checked={i === 0} />
+                <label for={`filtro-${cat.value}`}>{cat.label}</label>
+              </span>
+            ))
+          }
+        </fieldset>
+
+        <div class="mt-6 md:mt-8 w-full">
+          <div class="carousel-viewport w-full" data-carousel-viewport>
+            <div
+              class="carousel-track"
+              data-carousel-track
+              role="list"
+              aria-roledescription="carrusel"
+              aria-label="Catálogo de productos Mathen"
+            >
+              {
+                productos.map((producto, i) => (
+                  <div
+                    class="carousel-slide"
+                    data-carousel-slide
+                    data-index={i}
+                    data-cats={(categoryMap[producto.id] ?? []).join(' ')}
+                  >
+                    {/*
+                      F1 — ranura exterior (arriba, `.carousel-slide`) vs envoltorio
+                      interior (aquí): el bucle SOLO escribe `x` de la ranura; el
+                      reparto SOLO escribe transform/opacity de este envoltorio.
+                      Nunca la misma propiedad del mismo nodo desde las dos fuentes
+                      (ver CarouselLoop.ts).
+                    */}
+                    <div class="carousel-slide-inner" data-carousel-slide-inner>
+                      <ProductCard
+                        producto={producto}
+                        imagen={imagenMap[producto.id]?.src ?? asset('/img/productos/accesorios-obra.jpg')}
+                        alt={imagenMap[producto.id]?.alt ?? producto.nombre}
+                      />
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+
+            <button type="button" class="carousel-arrow carousel-arrow-prev" data-carousel-arrow="prev" aria-label="Producto anterior">
+              <span aria-hidden="true">←</span>
+            </button>
+            <button type="button" class="carousel-arrow carousel-arrow-next" data-carousel-arrow="next" aria-label="Producto siguiente">
+              <span aria-hidden="true">→</span>
+            </button>
+
+            <div class="ficha-stage" data-ficha-stage inert aria-hidden="true"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /*
+   * Mobile-first: fila con scroll táctil NATIVO (scroll-snap), sin JS, sin auto-play —
+   * degradación aceptada por la spec para <768px. Es también el estado antes de que
+   * el JS del carrusel arranque (o si JS no carga): nunca queda roto ni vacío.
+   */
+  .carousel-viewport {
+    position: relative;
+  }
+  .carousel-track {
+    display: flex;
+    gap: 1.25rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+  }
+  .carousel-slide {
+    flex: 0 0 auto;
+    width: 280px;
+    /*
+     * Defecto bloqueante (2026-09-13): la tarjeta tenía 30rem fijos con
+     * overflow:hidden y el contenido (con 2 CTA) medía 647px — el disparador
+     * de la ficha técnica quedaba fuera de la tarjeta e inalcanzable. Ahora la
+     * tarjeta compacta solo lleva UNA acción ("Ver ficha técnica"; "Cotizar
+     * este producto" se movió al panel de la ficha) y máximo 2 chips de spec,
+     * así que su contenido real cabe en esta altura reducida. Ajustado a mano
+     * verificando `scrollHeight` ≤ altura renderizada con el carrusel formado.
+     */
+    height: 28.5rem;
+    scroll-snap-align: start;
+  }
+
+  /*
+   * F1: envoltorio interior — el único nodo que el reparto (`setDealProgress`)
+   * puede tocar. Solo necesita ocupar la caja completa de la ranura; no requiere
+   * `position` propio (recibe `transform`/`opacity` igual que cualquier caja).
+   */
+  .carousel-slide-inner {
+    width: 100%;
+    height: 100%;
+  }
+
+  .carousel-arrow {
+    display: none;
+  }
+
+  /*
+   * D-B: filtro de categorías restaurado. Radios nativos (operables por teclado de
+   * forma nativa: flechas dentro del grupo, Tab entra/sale) + `:has()` para ocultar
+   * las tarjetas que no matchean, sin tocar el marcado servido (los 7 productos y
+   * sus specs siguen íntegros en el HTML; solo se les aplica `display:none` cuando
+   * el usuario filtró explícitamente esa categoría — nunca por defecto).
+   */
+  .catalogo-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border: 0;
+    padding: 0;
+    margin: 0;
+  }
+  .filtro-opcion input[type='radio'] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+  }
+  .filtro-opcion label {
+    display: inline-flex;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 9999px;
+    border: 1px solid var(--color-ink-600);
+    background: color-mix(in srgb, var(--color-ink-900) 60%, transparent);
+    color: var(--color-paper-dim);
+    padding: 0.4rem 0.9rem;
+    font-size: var(--text-caption);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  }
+  .filtro-opcion input[type='radio']:checked + label {
+    color: var(--color-ink-950);
+    background: var(--color-orange);
+    border-color: var(--color-orange);
+  }
+  .filtro-opcion input[type='radio']:focus-visible + label {
+    outline: 2px solid var(--color-orange);
+    outline-offset: 2px;
+  }
+
+  /* Uno de estos matchea según el radio marcado; "todos" no tiene regla (nada se
+     esconde). El `:has()` vive en el ancestro común (fieldset + track), así que
+     alcanza tarjetas fuera del propio fieldset. */
+  [data-catalogo-filter-scope]:has(#filtro-techos:checked) [data-carousel-slide]:not([data-cats~='techos']) {
+    display: none;
+  }
+  [data-catalogo-filter-scope]:has(#filtro-muros:checked) [data-carousel-slide]:not([data-cats~='muros']) {
+    display: none;
+  }
+  [data-catalogo-filter-scope]:has(#filtro-estructural:checked) [data-carousel-slide]:not([data-cats~='estructural']) {
+    display: none;
+  }
+  [data-catalogo-filter-scope]:has(#filtro-translucidos:checked) [data-carousel-slide]:not([data-cats~='translucidos']) {
+    display: none;
+  }
+  [data-catalogo-filter-scope]:has(#filtro-accesorios:checked) [data-carousel-slide]:not([data-cats~='accesorios']) {
+    display: none;
+  }
+
+  /* Escenario de la ficha técnica (Flip la llena cuando se abre). Vacío = sin tamaño
+     ni interacción; nunca display:none (D3 mueve el nodo real de la tarjeta aquí). */
+  .ficha-stage {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    pointer-events: none;
+  }
+  .ficha-stage.is-open {
+    pointer-events: auto;
+  }
+  .ficha-stage.is-open::before {
+    content: '';
+    position: absolute;
+    inset: -1.5rem;
+    background: color-mix(in srgb, var(--color-ink-950) 55%, transparent);
+    border-radius: 1.5rem;
+    z-index: -1;
+  }
+
+  /*
+   * Desktop (≥768px): el JS toma el control horizontal vía transform (D4). El
+   * track deja de ser una fila con scroll nativo; cada `.carousel-slide` se
+   * posiciona con `x` (translate) calculado en CarouselLoop.ts a partir de
+   * `--slide-step`, la única fuente de verdad del ancho de paso.
+   */
+  @media (min-width: 768px) {
+    .carousel-viewport {
+      /* Ver nota junto a `.carousel-slide` (mobile, arriba): misma razón,
+         altura reducida a la medida del contenido real de la tarjeta compacta
+         (el peor caso entre los 7 productos mide 441px de scrollHeight; se
+         deja margen). */
+      height: 28.5rem;
+      overflow: hidden;
+      /*
+       * D5 / defecto-1: el track ocupa el canal COMPLETO (mismo x/width que el
+       * resto del sitio, 144px/1152px a 1440px de ancho). Antes había padding
+       * aquí para hacerle sitio a las flechas, lo que encogía y desplazaba las
+       * tarjetas hacia adentro — el cliente lo prohibió explícitamente dos
+       * veces. Las flechas ahora se superponen a los bordes del track (ver
+       * `.carousel-arrow-prev/-next` más abajo): tienen fondo sólido y borde
+       * para leerse bien encima de una tarjeta.
+       */
+    }
+    .carousel-track {
+      position: relative;
+      overflow: visible;
+      scroll-snap-type: none;
+      gap: 0;
+      height: 100%;
+      /* En px, no rem: CarouselLoop.ts lee este valor con parseFloat y NO convierte
+         unidades, así que aquí solo puede ir un número en píxeles absolutos. */
+      --slide-step: 376px; /* 336px (21rem) de tarjeta + 40px (2.5rem) de separación */
+    }
+    .carousel-slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 21rem;
+      height: 100%;
+    }
+    .carousel-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 9999px;
+      border: 1px solid var(--color-ink-600);
+      background: var(--color-ink-900);
+      color: var(--color-paper);
+      font-size: 1.25rem;
+      z-index: 45;
+      cursor: pointer;
+      /* Se revelan por JS (opacity, ver script) recién cuando el carrusel ya
+         está formado: defecto-3 pedía que el primer estado del revelado (una
+         sola tarjeta) se vea sin ningún control encima. Con la transición
+         aparecen con un fundido suave en vez de un salto. */
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .carousel-arrow:hover {
+      color: var(--color-orange);
+      border-color: var(--color-orange);
+    }
+    .carousel-arrow-prev {
+      /* D5: pegada al borde IZQUIERDO del track (que ahora ocupa el canal
+         completo), superpuesta a la tarjeta del extremo — aceptado por la
+         spec porque tiene fondo sólido y buen contraste. */
+      left: 0;
+    }
+    .carousel-arrow-next {
+      right: 0;
+    }
+  }
+</style>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  import { Flip } from 'gsap/Flip';
+  import { revealIn } from '../components/ui/scrollReveal';
+  import { createCarouselLoop, type CarouselLoopHandle } from '../components/ui/CarouselLoop';
+  import { initFichaFlip } from '../components/ui/FichaFlip';
+
+  gsap.registerPlugin(ScrollTrigger, Flip);
+
+  const root = document.getElementById('catalogo');
+  if (root) {
+    // Título/párrafo: la cascada de entrada estándar del resto del sitio.
+    revealIn(root);
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+
+    const viewport = root.querySelector<HTMLElement>('[data-carousel-viewport]');
+    const track = root.querySelector<HTMLElement>('[data-carousel-track]');
+    const stage = root.querySelector<HTMLElement>('[data-ficha-stage]');
+    const slides = Array.from(root.querySelectorAll<HTMLElement>('[data-carousel-slide]'));
+    const prevBtn = root.querySelector<HTMLElement>('[data-carousel-arrow="prev"]');
+    const nextBtn = root.querySelector<HTMLElement>('[data-carousel-arrow="next"]');
+    // F4: la bajada (`<p>` bajo el `<h2>`) — el scrub de entrada ancla su `end` a
+    // este elemento en vez de a un porcentaje arbitrario del viewport del carrusel.
+    const pEl = root.querySelector<HTMLElement>('[data-reveal-group] p');
+    const filterInputs = Array.from(
+      root.querySelectorAll<HTMLInputElement>('[data-catalogo-filtros] input[type="radio"]'),
+    );
+
+    // D-B: subconjunto visible según la categoría marcada ("todos" = los 7).
+    function computeVisibleSlides(value: string): HTMLElement[] {
+      if (value === 'todos') return slides;
+      return slides.filter((el) => (el.dataset.cats ?? '').split(' ').filter(Boolean).includes(value));
+    }
+
+    if (viewport && track && stage && slides.length > 0) {
+      if (!isDesktop) {
+        // Móvil: fila de scroll táctil nativo (ya resuelta por CSS, filtro incluido —
+        // el `display:none` de las reglas `:has()` reordena la fila flex sin JS).
+        // Solo falta la ficha técnica, que sigue funcionando (a pantalla completa,
+        // ver ProductCard.astro), y no requiere ScrollTrigger ni bucle.
+        initFichaFlip(root, stage, () => {});
+      } else {
+        // Desktop: revelado por scroll SIN pin (D-A) + carrusel infinito a mano (D4).
+        // (referencia no-nula: `rebuildLoop`, definida más abajo, la captura en un
+        // closure y TS no retiene el narrowing del guard de arriba a través de él.)
+        const trackEl: HTMLElement = track;
+        let loop: CarouselLoopHandle = createCarouselLoop(trackEl, slides, { speed: 55, reduced });
+
+        let sectionInView = false;
+        let interacting = false;
+        let fichaOpen = false;
+        // D-A: sin pin no hay "al soltarse el pin, arranca el carrusel" — el hito
+        // ahora es que el scrub del reparto llegue a progreso 1 (`onLeave` de abajo).
+        // Con reduced-motion la fila ya está formada de entrada.
+        let revealDone = reduced;
+
+        const wantsToPlay = () => sectionInView && !interacting && !fichaOpen && !reduced && revealDone && !loop.isStatic();
+        const syncPlayback = () => {
+          if (wantsToPlay()) loop.play();
+          else loop.pause();
+        };
+
+        // Las flechas son controles del carrusel: no tienen sentido mientras el mazo
+        // todavía se está repartiendo, ni cuando el subconjunto filtrado (≤3) no
+        // tiene bucle (D-B). Se revelan junto con el fin del reparto.
+        let arrowsReady = revealDone;
+        const syncArrows = () => {
+          const visible = arrowsReady && !fichaOpen && !loop.isStatic();
+          [prevBtn, nextBtn].forEach((btn) => {
+            if (!btn) return;
+            btn.style.opacity = visible ? '1' : '0';
+            if (visible) btn.removeAttribute('inert');
+            else btn.setAttribute('inert', '');
+          });
+        };
+        syncArrows();
+
+        // F1: el autoplay no debe arrancar solo porque el ScrollTrigger disparó
+        // `onLeave`/`onLeaveBack` — con `scrub: 0.7` el reparto todavía puede tener
+        // inercia en ese instante, y si el autoplay arranca ahí, el bucle y el
+        // reparto (antes) escribían el mismo transform en el mismo frame: el
+        // "efecto Flash" de la foto del cliente. `requestSettle()` arma la espera;
+        // un `gsap.ticker` confirma que dejó de tocar el reparto durante
+        // `SETTLE_MS` (progreso asentado, sin tween pendiente) antes de soltar el
+        // autoplay y las flechas. `cancelSettle()` es la contraparte: cualquier
+        // señal de que el reparto se está deshaciendo apaga todo de inmediato, sin
+        // esperar (no hay "asentado" que confirmar cuando se está desasentando).
+        const SETTLE_MS = 140;
+        let pendingSettle = false;
+        let lastDealTouch = 0;
+        const noteDealTouch = () => {
+          lastDealTouch = performance.now();
+        };
+        const requestSettle = () => {
+          pendingSettle = true;
+        };
+        const cancelSettle = () => {
+          pendingSettle = false;
+          revealDone = false;
+          arrowsReady = false;
+          syncArrows();
+          loop.pause();
+          syncPlayback();
+        };
+        gsap.ticker.add(() => {
+          if (!pendingSettle) return;
+          if (performance.now() - lastDealTouch < SETTLE_MS) return;
+          pendingSettle = false;
+          revealDone = true;
+          arrowsReady = true;
+          syncArrows();
+          syncPlayback();
+        });
+
+        // Regla de rendimiento: el carrusel se detiene fuera de pantalla (hay un
+        // canvas WebGL corriendo todo el tiempo detrás; no se le suma otra animación
+        // invisible).
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              sectionInView = entry.isIntersecting;
+            }
+            syncPlayback();
+          },
+          { threshold: 0.1 },
+        );
+        io.observe(root);
+
+        // hover Y focus-within pausan (un usuario de teclado no puede leer una
+        // ficha que se está desplazando). Las flechas quedan dentro de esta misma
+        // zona: siguen operables mientras el carrusel está en pausa.
+        const startInteracting = () => {
+          interacting = true;
+          syncPlayback();
+        };
+        const stopInteracting = () => {
+          if (viewport.contains(document.activeElement)) return;
+          interacting = false;
+          syncPlayback();
+        };
+        viewport.addEventListener('pointerenter', startInteracting);
+        viewport.addEventListener('pointerleave', stopInteracting);
+        viewport.addEventListener('focusin', startInteracting);
+        viewport.addEventListener('focusout', stopInteracting);
+
+        prevBtn?.addEventListener('click', () => loop.step(-1));
+        nextBtn?.addEventListener('click', () => loop.step(1));
+
+        window.addEventListener('resize', () => loop.remeasure());
+
+        // Ficha técnica (D3, GSAP Flip): mientras está abierta, el carrusel se
+        // congela; al cerrar, retoma exactamente donde iba (pause/resume, nunca kill).
+        initFichaFlip(root, stage, (open) => {
+          fichaOpen = open;
+          syncArrows();
+          syncPlayback();
+        });
+
+        // D-B: al cambiar de filtro, se mata el bucle y se reconstruye con el
+        // subconjunto visible (recalculando anchos/posiciones desde cero). Flip
+        // anima la reubicación de las tarjetas que SIGUEN visibles, de su posición
+        // vieja a la nueva, para que el cambio no se sienta como un salto.
+        function rebuildLoop(newVisible: HTMLElement[]) {
+          const flipState = Flip.getState(newVisible);
+
+          loop.destroy();
+          slides.forEach((el) => {
+            const staysVisible = newVisible.includes(el);
+            el.toggleAttribute('inert', !staysVisible);
+          });
+
+          loop = createCarouselLoop(trackEl, newVisible, { speed: 55, reduced });
+          // El reparto ya terminó antes de que el filtro sea operable (las flechas/
+          // el filtro solo son alcanzables una vez `revealDone`); deja el subconjunto
+          // en su arreglo de reposo normal, sin reiniciar el mazo.
+          loop.setDealProgress(1);
+
+          Flip.from(flipState, {
+            duration: reduced ? 0 : 0.45,
+            ease: 'power2.out',
+            scale: true,
+            nested: true,
+          });
+
+          arrowsReady = revealDone;
+          syncArrows();
+          syncPlayback();
+        }
+
+        filterInputs.forEach((input) => {
+          input.addEventListener('change', () => {
+            if (!input.checked) return;
+            rebuildLoop(computeVisibleSlides(input.value));
+          });
+        });
+
+        if (reduced) {
+          // Sin scrub: la fila completa se ve de entrada, terminada.
+          loop.setDealProgress(1);
+        } else {
+          // D-C/D-D: estado inicial — todas apiladas detrás de la principal (medida
+          // en vivo, ver CarouselLoop.getMainIndex — nunca se asume el índice 0).
+          loop.setDealProgress(0);
+
+          // D-A: SIN pin. Timeline con scrub anclada al paso natural del área del
+          // carrusel por el viewport (sube por la pantalla igual que cualquier otro
+          // bloque); el reparto avanza atado a `dealState.p` (0→1) y se re-apila en
+          // orden inverso automáticamente si el usuario revierte el scroll (scrub).
+          //
+          // F4: el `end` ya no es un porcentaje arbitrario del viewport del
+          // carrusel — es `endTrigger` sobre la bajada (`pEl`) medida en vivo, así
+          // que el reparto termina cuando ese bloque está asentado en su posición
+          // de lectura (fallback a `viewport` si por algo el marcado no trae `<p>`).
+          const dealState = { p: 0 };
+          gsap.timeline({
+            scrollTrigger: {
+              trigger: viewport,
+              // Medido en vivo (sin pin, layout fijo): la bajada vive ~187px POR
+              // ENCIMA del viewport del carrusel, así que alcanza cualquier
+              // porcentaje-desde-arriba ANTES que el propio viewport (misma
+              // dirección de scroll). 'top 90%' arranca apenas el área asoma
+              // (progreso 0, una sola tarjeta, tal como pide el cliente) y deja
+              // margen suficiente para que 'top 25%' de la bajada — asentada y
+              // legible, ya lejos del footer de navegación — quede DESPUÉS del
+              // arranque y no antes (si no, el rango queda invertido/vacío).
+              start: 'top 90%',
+              endTrigger: pEl ?? viewport,
+              end: 'top 25%',
+              scrub: 0.7,
+              // F1: ninguno de estos 3 callbacks activa el autoplay directamente —
+              // solo arman (`requestSettle`) o cancelan (`cancelSettle`) la espera
+              // de asentado. Ver el `gsap.ticker` de arriba.
+              onLeave: () => requestSettle(),
+              onEnterBack: () => cancelSettle(),
+              onLeaveBack: () => cancelSettle(),
+            },
+          }).to(dealState, {
+            p: 1,
+            ease: 'none',
+            onUpdate: () => {
+              loop.setDealProgress(dealState.p);
+              noteDealTouch();
+            },
+          });
+
+          // F3: guardado también al salir por abajo. Simétrico al trigger de
+          // entrada: en vez de un mecanismo nuevo, es LA MISMA `setDealProgress`
+          // corriendo en reversa (1→0 al salir, 0→1 al volver a entrar), disparada
+          // por un segundo scrub anclado al borde inferior de TODA la sección.
+          //
+          // Defecto (2026-09-14, medido por el Tech Lead): con `start: 'bottom 90%'`
+          // el supuesto "plateau" entre este trigger y el de entrada NO era real —
+          // para una sección de un solo viewport de alto (`min-h-screen`), el borde
+          // inferior de la sección ya está a 90% del viewport casi inmediatamente
+          // después de que el reparto de entrada termina (los dos rangos casi se
+          // tocan). `cancelSettle()` (`onEnter` de abajo) se disparaba a los pocos
+          // px de que `requestSettle()` armara el asentado, así que el autoplay
+          // nunca llegaba a los `SETTLE_MS` de quietud: el gate se cerraba en el
+          // instante exacto en que la fila quedaba formada — el bug invertido que
+          // reportó el cliente. `start: 'bottom 30%'` empuja el inicio del guardado
+          // bastante más abajo, dejando un plateau real donde el reparto ya está en
+          // progreso 1 y asentado, sin que el guardado haya arrancado todavía.
+          const dealState2 = { p: 1 };
+          gsap.timeline({
+            scrollTrigger: {
+              trigger: root,
+              start: 'bottom 30%',
+              end: 'bottom top',
+              scrub: 0.7,
+              // Entrando a la zona de salida (scroll hacia abajo): se está por
+              // empezar a guardar — mismo tratamiento que "desasentando" arriba.
+              onEnter: () => cancelSettle(),
+              onEnterBack: () => cancelSettle(),
+              // Saliendo de la zona de salida hacia arriba (`onLeaveBack`): el
+              // guardado terminó de revertirse, p volvió a 1 — arma el asentado,
+              // igual que el `onLeave` del trigger de entrada.
+              onLeaveBack: () => requestSettle(),
+              // `onLeave` (scroll hacia abajo, p llegó a 0 — ya fuera de la
+              // sección): queda guardado y en pausa; no hay nada que asentar.
+              onLeave: () => cancelSettle(),
+            },
+          }).to(dealState2, {
+            p: 0,
+            ease: 'none',
+            onUpdate: () => {
+              loop.setDealProgress(dealState2.p);
+              noteDealTouch();
+            },
+          });
+
+          // Sin pin no hay pin-spacer, pero `src/lib/scroll.ts` igual vuelve a medir
+          // el offsetTop real de cada sección en cada `ScrollTrigger.refresh` — se
+          // fuerza aquí para que ese recálculo ocurra apenas los triggers quedan
+          // creados.
+          ScrollTrigger.refresh();
+        }
+
+        syncPlayback();
+      }
+    }
+  }
+</script>

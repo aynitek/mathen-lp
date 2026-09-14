@@ -1,0 +1,54 @@
+---
+/**
+ * Ensamblaje de la landing. Orden y ids canónicos: ver _brief/03-mapa-escenas.md.
+ *
+ * Arquitectura: un único <Canvas> WebGL fijo (z-0) montado una sola vez con client:load,
+ * con todo el HTML scrolleando encima (z-10). El motor de scroll (Lenis + ScrollTrigger)
+ * se arranca una sola vez desde aquí; el 3D lo consume vía scrollState, nunca vía el DOM.
+ */
+import Base from '../layouts/Base.astro';
+import Scene from '../components/three/Scene';
+
+import Nav from '../components/ui/Nav.astro';
+import ScrollProgress from '../components/ui/ScrollProgress';
+import WhatsAppFab from '../components/ui/WhatsAppFab.astro';
+import Footer from '../components/ui/Footer.astro';
+
+import Hero from '../sections/Hero.astro';
+import LaMateria from '../sections/LaMateria.astro';
+import ComoSeArma from '../sections/ComoSeArma.astro';
+import Catalogo from '../sections/Catalogo.astro';
+import ATuMedida from '../sections/ATuMedida.astro';
+import Nosotros from '../sections/Nosotros.astro';
+import PlantaYObras from '../sections/PlantaYObras.astro';
+import CotizaAhora from '../sections/CotizaAhora.astro';
+---
+
+<Base>
+  {/* Canvas 3D: fijo, decorativo, detrás de todo el contenido */}
+  <Scene client:load />
+
+  <Nav />
+  <ScrollProgress client:idle />
+
+  <main class="relative z-10">
+    <Hero />
+    <LaMateria />
+    <ComoSeArma />
+    <Catalogo />
+    <ATuMedida />
+    <Nosotros />
+    <PlantaYObras />
+    <CotizaAhora />
+  </main>
+
+  <Footer />
+  <WhatsAppFab />
+</Base>
+
+<script>
+  // Arranque único del motor de scroll (Lenis + ScrollTrigger sincronizados).
+  // initScroll() es idempotente, pero solo se invoca aquí.
+  import { initScroll } from '../lib/scroll';
+  initScroll();
+</script>

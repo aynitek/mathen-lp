@@ -1,0 +1,42 @@
+---
+/**
+ * Escena 8/8 — `cotiza-ahora` (scroll global 0.93–1.00).
+ * 3D: retorno al objeto del hero en rotación idle, cierra el loop — por eso, a diferencia
+ * del resto de secciones "a un lado", este bloque se centra: cierre de composición simétrico
+ * al hero (mismo criterio narrativo del storyboard 3D).
+ */
+import QuoteForm from '../components/ui/QuoteForm';
+---
+
+<section id="cotiza-ahora" class="relative z-10 min-h-screen flex items-center justify-center bg-transparent px-6 py-24">
+  <div class="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] bg-[radial-gradient(ellipse_at_center,rgba(6,7,10,0.75)_0%,rgba(6,7,10,0.35)_55%,transparent_80%)]" aria-hidden="true"></div>
+
+  <!-- Marco técnico: cierra el círculo con el mismo motivo de esquina del hero -->
+  <svg class="pointer-events-none absolute inset-6 md:inset-10 w-[calc(100%-3rem)] h-[calc(100%-3rem)] md:w-[calc(100%-5rem)] md:h-[calc(100%-5rem)] text-orange/30" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <path data-draw d="M0,10 L0,0 L10,0" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <path data-draw d="M90,0 L100,0 L100,10" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <path data-draw d="M0,90 L0,100 L10,100" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <path data-draw d="M90,100 L100,100 L100,90" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1.5" />
+  </svg>
+
+  <div data-reveal-group class="relative w-full max-w-2xl mx-auto text-center">
+    <h2 data-reveal data-split="lines" class="on-canvas font-display font-semibold text-display-lg leading-[1] tracking-[-0.02em] text-paper">
+      Cotiza tu proyecto ahora
+    </h2>
+    <p data-reveal class="mt-6 text-body-lg text-paper-dim">
+      Cuéntanos qué necesitas —línea, medida y cantidad— y te respondemos por WhatsApp o correo.
+    </p>
+
+    <div data-reveal class="mt-10 text-left">
+      <QuoteForm client:visible />
+    </div>
+  </div>
+</section>
+
+<script>
+  import { revealIn } from '../components/ui/scrollReveal';
+  import { drawLinesIn } from '../components/ui/techDraw';
+  const root = document.getElementById('cotiza-ahora');
+  revealIn(root);
+  drawLinesIn(root);
+</script>

@@ -1,0 +1,50 @@
+---
+/**
+ * Botón reutilizable — variantes `primary` (fill naranja) y `secondary` (borde).
+ * Renderiza <a> si recibe `href`, o <button> en caso contrario (para uso en formularios).
+ */
+interface Props {
+  href?: string;
+  variant?: 'primary' | 'secondary';
+  type?: 'button' | 'submit' | 'reset';
+  class?: string;
+  target?: '_blank' | '_self';
+  ariaLabel?: string;
+  disabled?: boolean;
+}
+
+const {
+  href,
+  variant = 'primary',
+  type = 'button',
+  class: className = '',
+  target,
+  ariaLabel,
+  disabled = false,
+} = Astro.props;
+
+const base =
+  'inline-flex items-center justify-center gap-2 rounded-full font-display font-semibold text-body ' +
+  'px-7 py-3.5 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:pointer-events-none';
+
+const variants = {
+  primary:
+    'bg-orange text-ink-950 hover:bg-orange-dim active:scale-95 shadow-[0_8px_24px_rgba(249,86,1,0.35)] focus-visible:outline-paper',
+  secondary:
+    'border border-white/20 text-paper font-medium hover:border-orange hover:text-orange active:scale-95 focus-visible:outline-orange',
+};
+
+const classes = `${base} ${variants[variant]} ${className}`;
+---
+
+{
+  href ? (
+    <a href={href} class={classes} target={target} aria-label={ariaLabel} rel={target === '_blank' ? 'noopener noreferrer' : undefined}>
+      <slot />
+    </a>
+  ) : (
+    <button type={type} class={classes} aria-label={ariaLabel} disabled={disabled}>
+      <slot />
+    </button>
+  )
+}

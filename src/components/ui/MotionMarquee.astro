@@ -1,0 +1,91 @@
+---
+/**
+ * Ticker horizontal de specs/formatos — llena tramos de scroll sin meter párrafos.
+ * Transform-only (nunca scrollLeft): un solo tween `x` en loop sobre la pista
+ * duplicada. `Observer` pausa el tween al pasar el puntero (pointer/touch),
+ * gesto barato y perceptible. Respeta prefers-reduced-motion: pista estática,
+ * contenido igual de legible sin animación.
+ */
+interface Props {
+  items: string[];
+  ariaLabel: string;
+  class?: string;
+}
+
+const { items, ariaLabel, class: className = '' } = Astro.props;
+const loop = [...items, ...items];
+---
+
+<div
+  class={`motion-marquee relative overflow-hidden ${className}`}
+  data-motion-marquee
+  role="list"
+  aria-label={ariaLabel}
+>
+  <div class="marquee-track flex w-max items-center gap-6 whitespace-nowrap" data-track>
+    {
+      loop.map((item, i) => (
+        <span class="flex items-center gap-6 shrink-0">
+          <span class="label-tec text-paper-faint/80" role="listitem" aria-hidden={i >= items.length ? 'true' : undefined}>
+            {item}
+          </span>
+          <span class="text-orange/50 shrink-0" aria-hidden="true">·</span>
+        </span>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .motion-marquee {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  }
+</style>
+
+<script>
+  import gsap from 'gsap';
+  import { Observer } from 'gsap/Observer';
+
+  let registered = false;
+  function ensureRegistered() {
+    if (!registered) {
+      gsap.registerPlugin(Observer);
+      registered = true;
+    }
+  }
+
+  function initMarquees() {
+    if (typeof window === 'undefined') return;
+    ensureRegistered();
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    document
+      .querySelectorAll<HTMLElement>('[data-motion-marquee]:not([data-marquee-ready])')
+      .forEach((el) => {
+        el.setAttribute('data-marquee-ready', '1');
+        const track = el.querySelector<HTMLElement>('[data-track]');
+        if (!track || reduced) return;
+
+        const distance = track.scrollWidth / 2;
+        if (distance <= 0) return;
+
+        track.style.willChange = 'transform';
+        const tween = gsap.to(track, {
+          x: -distance,
+          duration: Math.max(14, distance / 36),
+          ease: 'none',
+          repeat: -1,
+        });
+
+        Observer.create({
+          target: el,
+          type: 'pointer,touch',
+          onHover: () => tween.pause(),
+          onHoverEnd: () => tween.play(),
+        });
+      });
+  }
+
+  initMarquees();
+</script>

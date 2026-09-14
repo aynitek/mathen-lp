@@ -1,0 +1,25 @@
+{
+  "_nota": "PLACEHOLDERS confirmados por el cliente (AYNI) para el entregable de muestra. Reemplazar antes de publicar.",
+  "datosVerificados": false,
+  "_datosVerificados_nota": "Poner en true SOLO cuando telefono y correo sean los reales de Mathen. Controla si entran al JSON-LD indexable.",
+  "empresa": "Mathen Perú",
+  "whatsapp": "51999999999",
+  "whatsappVisible": "+51 999 999 999",
+  "telefono": "+51 (01) 000 0000",
+  "correo": "ventas@mathenperu.com",
+  "direccionTienda": "[[DATO PENDIENTE: dirección de tienda]]",
+  "direccionPlanta": "[[DATO PENDIENTE: dirección de planta]]",
+  "ruc": "[[DATO PENDIENTE: RUC]]",
+  "horario": "Lun a Vie 8:00–18:00 · Sáb 8:00–13:00",
+  "dominio": "https://aynitek.github.io/mathen-lp",
+  "pendientes": [
+    "WhatsApp comercial real",
+    "Correo comercial de Mathen (el de las fuentes es de AYNI)",
+    "Dirección de tienda y planta, RUC",
+    "Ancho útil de calamina: la fuente dice '1000 cm', se asumió 1000 mm",
+    "Listado de accesorios de obra y variantes UPVC",
+    "Fotos en alta resolución de planta y obras",
+    "Años de operación, obras ejecutadas, certificaciones"
+  ],
+  "_dominio_nota": "URL del despliegue de muestra en GitHub Pages. Cambiar al dominio real de Mathen cuando exista."
+}

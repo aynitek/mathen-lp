@@ -1,0 +1,46 @@
+---
+/**
+ * Tabla de especificaciones técnicas. Renderiza `specs` TAL CUAL vienen de productos.json:
+ * no se redondea ni se reformatea ningún número.
+ */
+interface Spec {
+  etiqueta: string;
+  valor: string;
+}
+
+interface Props {
+  specs: Spec[];
+  caption?: string;
+  class?: string;
+}
+
+const { specs, caption, class: className = '' } = Astro.props;
+---
+
+{
+  specs.length > 0 && (
+    <div class={`overflow-x-auto ${className}`}>
+      <table class="w-full text-body border-collapse">
+        {caption && <caption class="sr-only">{caption}</caption>}
+        <thead>
+          <tr class="border-b border-ink-600">
+            <th scope="col" class="label-tec text-left text-paper-faint py-3 pr-4">
+              Especificación
+            </th>
+            <th scope="col" class="label-tec text-left text-paper-faint py-3">
+              Valor
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {specs.map((spec) => (
+            <tr class="border-b border-ink-700 hover:bg-ink-800/60 transition-colors">
+              <td class="py-3 pr-4 text-paper align-top">{spec.etiqueta}</td>
+              <td class="py-3 text-paper-dim tabular-nums align-top">{spec.valor}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}

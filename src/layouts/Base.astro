@@ -1,0 +1,61 @@
+---
+import '../styles/global.css';
+import contacto from '../data/contacto.json';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Mathen Perú | Calaminas, Paneles y Coberturas a Medida',
+  description = 'Calaminas Aluzinc, paneles sándwich, placa colaborante, policarbonato y coberturas UPVC fabricados a medida en Perú. Cotiza por WhatsApp.',
+} = Astro.props;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Mathen Perú',
+  url: contacto.dominio,
+  logo: `${contacto.dominio}/img/logo.png`,
+  description:
+    'Fabricación y comercialización de calaminas, planchas metálicas, paneles termoaislantes y coberturas para construcción e industria en Perú.',
+  areaServed: 'PE',
+  // Teléfono y correo solo entran al JSON-LD cuando son datos REALES del cliente.
+  // Publicar placeholders aquí los haría indexables por Google como contacto oficial
+  // de Mathen — el footer los muestra con aviso visible, los datos estructurados no pueden.
+  ...(contacto.datosVerificados
+    ? { telephone: contacto.telefono, email: contacto.correo }
+    : {}),
+};
+import { asset } from '../lib/asset';
+---
+
+<!doctype html>
+<html lang="es-PE">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href={asset('/img/logo.png')} />
+    <link rel="canonical" href={contacto.dominio} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:locale" content="es_PE" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+  <body class="bg-ink-950 text-paper font-body antialiased">
+    <slot />
+  </body>
+</html>

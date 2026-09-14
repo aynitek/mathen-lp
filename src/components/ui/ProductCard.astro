@@ -1,0 +1,337 @@
+---
+/**
+ * Tarjeta de producto (catálogo) — v5 (carrusel infinito + ficha técnica con Flip,
+ * ver `_brief/06-catalogo-carrusel.md`).
+ * De un vistazo: imagen + nombre + tagline + 2-3 specs clave como chips.
+ * El detalle técnico completo (specs, aplicaciones, beneficios, variantes) ya NO vive
+ * en un <details> nativo: D3 exige que la misma tarjeta se transforme con GSAP Flip,
+ * lo que requiere un disparador <button> real (no <summary>) y un panel que FichaFlip.ts
+ * mueve/expande. El panel sigue SIEMPRE presente en el HTML (nunca display:none): es
+ * el requisito de SEO de la especificación. Colapsado, se oculta con opacity/posición,
+ * nunca con display:none.
+ * Las specs se renderizan LITERALES desde productos.json: no se redondea ni reformatea
+ * ningún número, y los [[DATO PENDIENTE]] quedan visibles donde existan.
+ */
+import SpecTable from './SpecTable.astro';
+import contacto from '../../data/contacto.json';
+import { buildWhatsAppLink, buildContextMessage } from './whatsapp';
+
+interface Spec {
+  etiqueta: string;
+  valor: string;
+}
+interface Producto {
+  id: string;
+  nombre: string;
+  slugCategoria: string;
+  tagline: string;
+  descripcion: string;
+  specs: Spec[];
+  aplicaciones: string[];
+  beneficios: string[];
+  variantes: string[];
+}
+
+interface Props {
+  producto: Producto;
+  imagen: string;
+  alt: string;
+}
+
+const { producto, imagen, alt } = Astro.props;
+
+const waLink = buildWhatsAppLink(
+  contacto.whatsapp,
+  buildContextMessage({ lineaProducto: producto.nombre }),
+);
+
+// De un vistazo: máximo 2 specs clave (decisión del Tech Lead para que la tarjeta
+// compacta quepa entera sin recorte), en el mismo orden en que vienen del JSON
+// (no se elige a mano cuáles "se ven mejor": se toman las primeras, tal como están priorizadas en la fuente).
+const chips = producto.specs.slice(0, 2);
+const tieneDetalle =
+  producto.specs.length > 0 ||
+  producto.aplicaciones?.length > 0 ||
+  producto.beneficios?.length > 0 ||
+  producto.variantes?.length > 0;
+---
+
+<article
+  data-reveal-card
+  data-carousel-card
+  data-ficha-state="closed"
+  id={`tarjeta-${producto.id}`}
+  class="ficha-card group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/8 bg-ink-800/95 backdrop-blur-sm
+         transition-[border-color,box-shadow] duration-300 hover:border-orange/40
+         hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(2,48,99,0.35)]
+         focus-within:outline-2 focus-within:outline-orange"
+  data-categoria={producto.slugCategoria}
+>
+  <div class="ficha-card-compact flex h-full flex-col">
+    <div class="relative aspect-[16/9] w-full overflow-hidden bg-ink-900 shrink-0">
+      <img
+        src={imagen}
+        alt={alt}
+        loading="lazy"
+        width="800"
+        height="600"
+        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+      />
+      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-950/85 via-ink-950/5 to-transparent" aria-hidden="true"></div>
+      <p class="label-tec absolute left-4 bottom-3 text-paper drop-shadow-[0_1px_6px_rgba(6,7,10,0.9)]">
+        {producto.slugCategoria.replace(/-/g, ' ')}
+      </p>
+    </div>
+
+    <div class="flex flex-1 flex-col p-5">
+      <h3 class="font-display text-h3 leading-[1.15] text-paper line-clamp-2">{producto.nombre}</h3>
+      <p class="mt-1 text-body text-paper-dim line-clamp-1">{producto.tagline}</p>
+
+      {
+        chips.length > 0 && (
+          <ul class="mt-3 flex flex-wrap gap-2">
+            {chips.map((spec) => (
+              <li class="spec-chip">
+                <span class="label-tec text-paper-faint line-clamp-1">{spec.etiqueta}</span>
+                <span class="text-paper-dim line-clamp-2">{spec.valor}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+
+      {
+        tieneDetalle && (
+          <div class="mt-auto pt-4">
+            <button
+              type="button"
+              id={`ficha-trigger-${producto.id}`}
+              data-ficha-trigger
+              aria-expanded="false"
+              aria-controls={`ficha-panel-${producto.id}`}
+              class="cursor-pointer select-none inline-flex items-center gap-1 text-caption uppercase tracking-[0.04em]
+                     text-orange hover:text-orange-dim focus-visible:outline-2 focus-visible:outline-orange rounded
+                     bg-transparent border-0 p-0"
+            >
+              Ver ficha técnica
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        )
+      }
+    </div>
+  </div>
+
+  {
+    tieneDetalle && (
+      <div
+        class="ficha-panel"
+        id={`ficha-panel-${producto.id}`}
+        data-ficha-panel
+        role="region"
+        aria-label={`Ficha técnica de ${producto.nombre}`}
+        tabindex="-1"
+      >
+        <button
+          type="button"
+          data-ficha-close
+          aria-label={`Cerrar ficha técnica de ${producto.nombre}`}
+          class="ficha-close focus-visible:outline-2 focus-visible:outline-orange"
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+
+        <div class="ficha-panel-media">
+          <img src={imagen} alt={alt} loading="lazy" width="800" height="600" class="h-full w-full object-cover" />
+        </div>
+
+        <div class="ficha-panel-body">
+          <h3 class="font-display text-h3 text-paper">{producto.nombre}</h3>
+          <p class="mt-2 text-body text-paper-dim">{producto.descripcion}</p>
+
+          {producto.specs.length > 0 && (
+            <div class="mt-4">
+              <SpecTable specs={producto.specs} caption={`Especificaciones técnicas de ${producto.nombre}`} />
+            </div>
+          )}
+
+          {producto.aplicaciones?.length > 0 && (
+            <div class="mt-4">
+              <p class="label-tec text-paper-faint">Aplicaciones</p>
+              <ul class="mt-2 flex flex-wrap gap-2">
+                {producto.aplicaciones.map((app) => (
+                  <li class="rounded-full border border-ink-600 px-3 py-1 text-caption text-paper-dim">{app}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {producto.beneficios?.length > 0 && (
+            <div class="mt-4">
+              <p class="label-tec text-paper-faint">Beneficios</p>
+              <ul class="mt-2 space-y-1.5 text-body text-paper-dim list-disc list-inside">
+                {producto.beneficios.map((b) => (
+                  <li>{b}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {producto.variantes?.length > 0 && (
+            <div class="mt-4">
+              <p class="label-tec text-paper-faint">Variantes</p>
+              <ul class="mt-2 flex flex-wrap gap-2">
+                {producto.variantes.map((v) => (
+                  <li class="label-tec rounded-full border border-ink-600 px-3 py-1 text-paper-faint">{v}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Cotizar ${producto.nombre} por WhatsApp`}
+            class="mt-5 inline-flex items-center gap-2 rounded-full bg-orange text-ink-950 font-display font-semibold
+                   text-caption uppercase tracking-[0.04em] px-5 py-2.5 hover:bg-orange-dim active:scale-95
+                   focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper
+                   transition-all duration-150"
+          >
+            Cotizar este producto
+          </a>
+        </div>
+      </div>
+    )
+  }
+</article>
+
+<style>
+  .spec-chip {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-ink-600);
+    background: color-mix(in srgb, var(--color-ink-900) 60%, transparent);
+    padding: 0.4rem 0.7rem;
+    font-size: var(--text-caption);
+    line-height: 1.3;
+    /*
+     * Máximo 2 chips por tarjeta (ver ProductCard.astro): se reparten el ancho
+     * a la mitad cada uno (en vez de crecer con su texto hasta ocupar toda la
+     * fila y empujar al segundo chip a otra línea, que era lo que disparaba la
+     * altura de la tarjeta). El valor lleva line-clamp-2 (visual, no borra el
+     * texto del HTML: sigue íntegro para SEO) para acotar la altura de la fila
+     * a un máximo predecible sin importar qué tan largo sea el spec literal.
+     */
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 0;
+  }
+
+  /*
+   * Compacto y ficha se apilan (position:absolute; inset:0) sobre la MISMA caja del
+   * <article>: así el cruce entre ambos es solo opacity/visibility (regla dura de
+   * rendimiento) y Flip solo tiene que animar el tamaño/posición del <article>, nunca
+   * el layout interno. `visibility` se restituye siempre al abrir (permitido por la
+   * spec explícitamente), nunca se usa display:none: el contenido de la ficha sigue
+   * íntegro en el HTML servido incluso colapsado (SEO).
+   */
+  .ficha-card {
+    isolation: isolate;
+  }
+  .ficha-card-compact {
+    position: absolute;
+    inset: 0;
+    opacity: 1;
+    transition: opacity 0.25s ease;
+  }
+  .ficha-panel {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-ink-800);
+    border-radius: inherit;
+    padding: 1.75rem;
+    transition: opacity 0.25s ease;
+  }
+  .ficha-panel-media {
+    overflow: hidden;
+    border-radius: 0.75rem;
+    flex-shrink: 0;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    margin-bottom: 1.25rem;
+  }
+  .ficha-panel-body {
+    min-height: 0;
+  }
+  .ficha-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    border: 1px solid var(--color-ink-600);
+    background: var(--color-ink-900);
+    color: var(--color-paper);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .ficha-close:hover {
+    color: var(--color-orange);
+    border-color: var(--color-orange);
+  }
+
+  article[data-ficha-state='open'] .ficha-card-compact {
+    opacity: 0;
+    pointer-events: none;
+  }
+  article[data-ficha-state='open'] .ficha-panel {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  /* Desktop: la ficha se expande HORIZONTALMENTE (imagen a un lado, specs al otro). */
+  @media (min-width: 768px) {
+    .ficha-panel {
+      flex-direction: row;
+      gap: 1.75rem;
+      align-items: flex-start;
+    }
+    .ficha-panel-media {
+      width: 34%;
+      aspect-ratio: 4 / 3;
+      margin-bottom: 0;
+    }
+    .ficha-panel-body {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      max-height: 100%;
+    }
+  }
+
+  /* Móvil: ficha a pantalla completa, degradación aceptada por la spec. */
+  @media (max-width: 767px) {
+    article[data-ficha-state='open'] {
+      position: fixed;
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
+      border-radius: 0;
+      z-index: 60;
+    }
+  }
+</style>

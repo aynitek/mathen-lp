@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+@theme {
+  /* --- Marca (muestreados del logo) --- */
+  --color-navy:        #023063;
+  --color-navy-light:  #0E4A93;
+  --color-orange:      #F95601;
+  --color-orange-dim:  #C9430A;
+  /* Naranja aclarado para texto SOBRE navy solido: #F95601 da 3.96:1 (falla AA).
+     Este da 5.03:1. Usar solo ahi; en fondos oscuros va el naranja de marca. */
+  --color-orange-on-navy: #FF7A2F;
+
+  /* --- Fondo (casi negro, para que el metal brille) --- */
+  --color-ink-950: #06070A;
+  --color-ink-900: #0B0E14;
+  --color-ink-800: #12161F;
+  --color-ink-700: #1C212C;
+  --color-ink-600: #2A303D;
+
+  /* --- Texto --- */
+  --color-paper:       #F5F6F8;
+  --color-paper-dim:   #B8BCC4;
+  --color-paper-faint: #767C88;
+
+  /* --- Semánticos --- */
+  --color-success: #2FAE6A;
+  --color-error:   #E4483B;
+
+  /* --- Tipografía --- */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body:    "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --text-display-xl: clamp(2.75rem, 2rem + 3.75vw, 6.5rem);
+  --text-display-lg: clamp(2.25rem, 1.7rem + 2.75vw, 4.5rem);
+  --text-display-md: clamp(1.75rem, 1.4rem + 1.75vw, 3rem);
+  --text-h3:         clamp(1.25rem, 1.1rem + 0.75vw, 1.75rem);
+  --text-body-lg:    clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+  --text-body:       clamp(0.9375rem, 0.9rem + 0.15vw, 1.0625rem);
+  --text-caption:    clamp(0.75rem, 0.72rem + 0.1vw, 0.875rem);
+}
+
+@layer base {
+  html {
+    background-color: var(--color-ink-950);
+    color: var(--color-paper);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  body { margin: 0; overflow-x: hidden; }
+  h1, h2, h3, .font-display { font-family: var(--font-display); }
+
+  /* Lenis */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  .lenis.lenis-stopped { overflow: hidden; }
+
+  :focus-visible {
+    outline: 2px solid var(--color-orange);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility bloque-izq {
+  /* Columna de texto alineada a la IZQUIERDA pero dentro del mismo canal que los
+     contenedores centrados (max-w-6xl mx-auto) del resto del sitio.
+     Sin esto la columna se pega al borde del viewport y rompe la retícula:
+     el cliente lo notó en `a-tu-medida`, pero pasaba también en `la-materia`
+     y `como-se-arma`. En pantallas angostas el margen cae a 0 y manda el px-6. */
+  width: 100%;
+  max-width: 36rem;                              /* = max-w-xl */
+  margin-right: auto;
+  margin-left: max(0px, calc((100% - 72rem) / 2)); /* 72rem = max-w-6xl */
+}
+
+@utility on-canvas {
+  /* Titulares sobre el canvas 3D: la sombra sostiene el contorno aunque
+     detrás pase un reflejo claro del metal. No sustituye al velo, lo respalda. */
+  text-shadow: 0 2px 18px rgb(6 7 10 / 0.9), 0 1px 3px rgb(6 7 10 / 0.8);
+}
+
+@utility label-tec {
+  font-family: var(--font-display);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

@@ -1,0 +1,79 @@
+---
+/**
+ * Escena 6/8 — `nosotros` (scroll global 0.74–0.84).
+ * 3D: el objeto se aleja a vista isométrica estable; entra un TINTE navy translúcido de
+ * bordes difuminados (antes era un bloque opaco, y el cliente notó que cortaba la animación).
+ * El navy es un "respiro" cromático del storyboard, pero un respiro no es un vacío:
+ * se llena con el mismo lenguaje técnico del resto del sitio (marco de esquina, numeración
+ * de pilares, ticker) en vez de párrafo extra.
+ */
+import MotionMarquee from '../components/ui/MotionMarquee.astro';
+
+const pilares = [
+  'Equipo capacitado y profesional',
+  'Calidad en la venta y en la entrega',
+  'Fabricación a la medida del cliente',
+];
+const tickerItems = ['MATHEN PERÚ', 'EQUIPO CAPACITADO', 'CALIDAD EN LA ENTREGA', 'FABRICACIÓN A MEDIDA'];
+---
+
+<section id="nosotros" class="relative z-10 min-h-screen flex items-center px-6 py-24 overflow-hidden">
+  <!-- Tinte navy translúcido con bordes difuminados: mantiene el respiro cromático del
+       storyboard sin cortar el recorrido 3D en seco, como sí hacía el bloque opaco. -->
+  <div class="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] backdrop-blur-[2px] bg-gradient-to-b from-transparent via-navy/92 to-transparent" aria-hidden="true"></div>
+  <!-- Marco técnico de esquina, coherente con hero/cotiza-ahora (cierre de la misma pieza) -->
+  <svg class="pointer-events-none absolute inset-8 md:inset-12 w-[calc(100%-4rem)] h-[calc(100%-4rem)] md:w-[calc(100%-6rem)] md:h-[calc(100%-6rem)] text-white/15" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <path data-draw d="M0,8 L0,0 L8,0" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <path data-draw d="M92,0 L100,0 L100,8" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <path data-draw d="M0,92 L0,100 L8,100" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <path data-draw d="M92,100 L100,100 L100,92" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1.5" />
+  </svg>
+
+  <div data-reveal-group class="relative max-w-3xl mx-auto w-full">
+    <h2 data-reveal data-split="lines" class="font-display font-semibold text-display-lg leading-[1] tracking-[-0.02em] text-paper">
+      Un equipo hecho para tu proyecto
+    </h2>
+
+    <div class="mt-8 grid gap-8 sm:grid-cols-2">
+      <div data-reveal>
+        <h3 class="label-tec text-paper mb-2 border-l-2 border-orange pl-3">Misión</h3>
+        <p class="text-body-lg text-paper/90">
+          Nuestra misión es cubrir cada necesidad técnica de tu proyecto, comercializando los productos que tu
+          obra requiere, en la medida exacta que pides.
+        </p>
+      </div>
+      <div data-reveal>
+        <h3 class="label-tec text-paper mb-2 border-l-2 border-orange pl-3">Visión</h3>
+        <p class="text-body-lg text-paper/90">
+          Aspiramos a ser reconocidos como una de las empresas que aportan al desarrollo de la construcción y la
+          industria en el Perú, a través de los productos y el servicio que ofrecemos.
+        </p>
+      </div>
+    </div>
+
+    <ul class="mt-10 grid gap-4 sm:grid-cols-3">
+      {
+        pilares.map((pilar, i) => (
+          <li data-reveal class="relative overflow-hidden rounded-xl border border-white/15 bg-white/5 backdrop-blur-sm px-5 py-4 text-body text-paper">
+            <span class="absolute -top-3 -right-1 font-display font-bold text-display-md text-white/10 select-none" aria-hidden="true">
+              {`0${i + 1}`}
+            </span>
+            <span class="relative">{pilar}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <div class="absolute bottom-6 inset-x-0 px-6">
+    <MotionMarquee items={tickerItems} ariaLabel="Mathen Perú: equipo, calidad y fabricación a medida" />
+  </div>
+</section>
+
+<script>
+  import { revealIn } from '../components/ui/scrollReveal';
+  import { drawLinesIn } from '../components/ui/techDraw';
+  const root = document.getElementById('nosotros');
+  revealIn(root);
+  drawLinesIn(root);
+</script>

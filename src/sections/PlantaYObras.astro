@@ -1,0 +1,31 @@
+---
+/**
+ * Escena 7/8 — `planta-y-obras` (scroll global 0.84–0.93).
+ * 3D: el canvas se atenúa (opacidad/blur); la galería HTML toma el protagonismo.
+ */
+import Gallery from '../components/ui/Gallery.astro';
+---
+
+<section id="planta-y-obras" class="relative z-10 min-h-screen flex flex-col justify-center bg-transparent px-6 py-24">
+  <div class="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] bg-gradient-to-b from-ink-950/80 via-ink-950/72 to-ink-950/85" aria-hidden="true"></div>
+
+  <div class="relative max-w-6xl mx-auto w-full">
+    <div data-reveal-group class="max-w-xl">
+      <h2 data-reveal class="on-canvas font-display font-semibold text-display-lg leading-[1] tracking-[-0.02em] text-paper">
+        De la planta a tu obra
+      </h2>
+      <p data-reveal class="mt-6 text-body-lg text-paper-dim">
+        Así se fabrica, se carga y se despacha cada línea de nuestro catálogo.
+      </p>
+    </div>
+
+    <div class="mt-10">
+      <Gallery />
+    </div>
+  </div>
+</section>
+
+<script>
+  import { revealIn } from '../components/ui/scrollReveal';
+  revealIn(document.getElementById('planta-y-obras'));
+</script>

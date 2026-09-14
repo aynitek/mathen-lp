@@ -1,0 +1,156 @@
+---
+/**
+ * Escena 3/8 — `como-se-arma` (scroll global 0.26–0.42).
+ * 3D: corte de panel sándwich, 3 capas se separan, clippingPlane abre la sección,
+ * contador de espesor de núcleo atado al scroll (mapa-escenas, Escena 3).
+ * El contador HTML de abajo replica ese mismo dato en overlay: 30→200mm, "leído"
+ * del scroll, sin easing propio — mismo criterio que el uniform del 3D.
+ * Toggles interactivos (Techo/Muro · Poliuretano/Poliestireno) en CSS puro (:has),
+ * accesibles con teclado nativo, sin JS.
+ */
+import MotionMarquee from '../components/ui/MotionMarquee.astro';
+import productos from '../data/productos.json';
+
+const pur = productos.find((p) => p.id === 'panel-sandwich-poliuretano')!;
+const eps = productos.find((p) => p.id === 'panel-sandwich-poliestireno')!;
+
+const nucleoPur = pur.specs.find((s) => s.etiqueta === 'Espesores de núcleo')!;
+const nucleoEps = eps.specs.find((s) => s.etiqueta.startsWith('Espesores de núcleo'))!;
+
+const tickerItems = ['TECHO 2 PERALTES', 'TECHO 3 PERALTES', 'TECHO 4 PERALTES', 'MURO MACHIMBRADO', 'POLIURETANO', 'POLIESTIRENO'];
+---
+
+<section id="como-se-arma" class="relative z-10 min-h-[160vh] flex items-center bg-transparent px-6 py-24 overflow-hidden">
+  <div class="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] bg-gradient-to-r from-ink-950/95 from-30% via-ink-950/88 via-60% to-transparent" aria-hidden="true"></div>
+
+  <div data-reveal-group class="relative bloque-izq">
+    <h2 data-reveal data-split="lines" class="on-canvas font-display font-semibold text-display-lg leading-[1] tracking-[-0.02em] text-paper">
+      Dos planchas de acero, un núcleo aislante
+    </h2>
+
+    <svg class="mt-3 w-40 h-3 text-orange/60" viewBox="0 0 160 12" aria-hidden="true">
+      <path data-draw d="M0,6 L160,6" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1" />
+      <path data-draw d="M0,0 L0,12" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1" />
+      <path data-draw d="M160,0 L160,12" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1" />
+    </svg>
+
+    <p data-reveal class="mt-6 text-body-lg text-paper-dim">
+      El panel sándwich combina dos caras en acero prepintado Aluzinc AZ-150 con un núcleo inyectado a presión —
+      poliuretano o poliestireno, según lo que tu proyecto necesite aislar.
+    </p>
+
+    <div data-reveal class="toggle-scope mt-8 flex flex-col gap-6">
+      <div>
+        <p class="label-tec text-paper-faint mb-2">Superficie</p>
+        <div class="inline-flex rounded-full border border-ink-600 p-1 gap-1">
+          <input type="radio" id="sup-techo" name="superficie" class="sr-only" checked />
+          <label for="sup-techo" class="toggle-pill">Techo</label>
+          <input type="radio" id="sup-muro" name="superficie" class="sr-only" />
+          <label for="sup-muro" class="toggle-pill">Muro</label>
+        </div>
+        <p data-panel="techo" class="mt-3 text-body text-paper-dim">
+          Para techo: 2, 3 o 4 peraltes (crestas).
+        </p>
+        <p data-panel="muro" class="mt-3 text-body text-paper-dim">
+          Para muro: unión machimbrada, fácil de instalar y transportar, sin herramienta especializada.
+        </p>
+      </div>
+
+      <div>
+        <p class="label-tec text-paper-faint mb-2">Núcleo</p>
+        <div class="inline-flex rounded-full border border-ink-600 p-1 gap-1">
+          <input type="radio" id="nucleo-pur" name="nucleo" class="sr-only" checked />
+          <label for="nucleo-pur" class="toggle-pill">Poliuretano</label>
+          <input type="radio" id="nucleo-eps" name="nucleo" class="sr-only" />
+          <label for="nucleo-eps" class="toggle-pill">Poliestireno</label>
+        </div>
+        <div data-panel="pur" class="mt-3 rounded-xl border border-ink-700 bg-ink-900/60 p-4">
+          <p class="text-body text-paper">{pur.nombre}</p>
+          <p class="text-caption text-paper-dim tabular-nums mt-1">{nucleoPur.etiqueta}: {nucleoPur.valor}</p>
+        </div>
+        <div data-panel="eps" class="rounded-xl border border-ink-700 bg-ink-900/60 p-4">
+          <p class="text-body text-paper">{eps.nombre}</p>
+          <p class="text-caption text-paper-dim tabular-nums mt-1">{nucleoEps.etiqueta}: {nucleoEps.valor}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cifra técnica leída del scroll: recorre el rango real de espesor de núcleo -->
+  <div class="hidden lg:flex absolute right-16 top-1/2 -translate-y-1/2 flex-col items-end" data-reveal-group aria-hidden="true">
+    <span data-reveal class="label-tec text-paper-faint">Espesor de núcleo</span>
+    <span
+      id="nucleo-counter"
+      data-reveal
+      class="font-display font-semibold text-display-md text-orange tabular-nums tracking-[-0.01em]"
+      style="min-width: 6ch; display: inline-block; text-align: right;"
+    >
+      30 mm
+    </span>
+  </div>
+
+  <div class="absolute bottom-8 inset-x-0 px-6">
+    <MotionMarquee items={tickerItems} ariaLabel="Variantes de peralte y núcleo disponibles" />
+  </div>
+</section>
+
+<style>
+  .toggle-pill {
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    border-radius: 9999px;
+    padding: 0.5rem 1.1rem;
+    font-family: var(--font-display);
+    font-size: var(--text-caption);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-paper-dim);
+    transition: color 150ms, background-color 150ms;
+  }
+  .toggle-pill:hover {
+    color: var(--color-paper);
+  }
+  input:checked + .toggle-pill {
+    background-color: var(--color-orange);
+    color: var(--color-ink-950);
+    font-weight: 600;
+  }
+  input:focus-visible + .toggle-pill {
+    outline: 2px solid var(--color-orange);
+    outline-offset: 2px;
+  }
+
+  [data-panel='muro'],
+  [data-panel='eps'] {
+    display: none;
+  }
+  .toggle-scope:has(#sup-muro:checked) [data-panel='techo'] {
+    display: none;
+  }
+  .toggle-scope:has(#sup-muro:checked) [data-panel='muro'] {
+    display: block;
+  }
+  .toggle-scope:has(#nucleo-eps:checked) [data-panel='pur'] {
+    display: none;
+  }
+  .toggle-scope:has(#nucleo-eps:checked) [data-panel='eps'] {
+    display: block;
+  }
+</style>
+
+<script>
+  import { revealIn, addDepthParallax } from '../components/ui/scrollReveal';
+  import { drawLinesIn } from '../components/ui/techDraw';
+  import { bindScrubNumber } from '../components/ui/techCounter';
+
+  const root = document.getElementById('como-se-arma');
+  revealIn(root);
+  drawLinesIn(root);
+  addDepthParallax(root, 16);
+
+  const counter = document.getElementById('nucleo-counter');
+  if (root && counter) {
+    bindScrubNumber(counter, root, 30, 200, ' mm');
+  }
+</script>

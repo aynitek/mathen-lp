@@ -1,0 +1,66 @@
+---
+/**
+ * Footer — única sección que rompe intencionalmente con el canvas 3D de fondo
+ * (fondo sólido ink-950, sin z-index del WebGL): señal de "fin del recorrido inmersivo".
+ * Datos de contacto desde contacto.json — los pendientes se muestran tal cual, visibles.
+ */
+import contacto from '../../data/contacto.json';
+
+const year = new Date().getFullYear();
+import { asset } from '../../lib/asset';
+---
+
+<footer class="relative z-10 border-t border-ink-700 bg-ink-950 px-6 py-12">
+  <div class="max-w-6xl mx-auto grid gap-10 md:grid-cols-4 text-body text-paper-dim">
+    <div>
+      <img src={asset('/img/logo.png')} alt={contacto.empresa} class="h-10 w-auto mb-4" />
+      <p>Calaminas, paneles sándwich, placa colaborante, policarbonato y coberturas UPVC fabricados a la medida de tu obra.</p>
+    </div>
+
+    <div>
+      <h3 class="label-tec text-paper mb-3">Contacto</h3>
+      <ul class="space-y-2">
+        <li>
+          <a href={`https://wa.me/${contacto.whatsapp}`} target="_blank" rel="noopener noreferrer"
+             class="hover:text-orange focus-visible:outline-2 focus-visible:outline-orange rounded">
+            WhatsApp: {contacto.whatsappVisible}
+          </a>
+        </li>
+        <li>
+          <a href={`tel:${contacto.telefono}`} class="hover:text-orange focus-visible:outline-2 focus-visible:outline-orange rounded">
+            {contacto.telefono}
+          </a>
+        </li>
+        <li>
+          <a href={`mailto:${contacto.correo}`} class="hover:text-orange focus-visible:outline-2 focus-visible:outline-orange rounded">
+            {contacto.correo}
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <h3 class="label-tec text-paper mb-3">Ubicación y horario</h3>
+      <ul class="space-y-2">
+        <li>Tienda: {contacto.direccionTienda}</li>
+        <li>Planta: {contacto.direccionPlanta}</li>
+        <li>{contacto.horario}</li>
+        <li>RUC: {contacto.ruc}</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3 class="label-tec text-paper mb-3">Navegación</h3>
+      <ul class="space-y-2">
+        <li><a href="#catalogo" class="hover:text-orange focus-visible:outline-2 focus-visible:outline-orange rounded">Catálogo</a></li>
+        <li><a href="#nosotros" class="hover:text-orange focus-visible:outline-2 focus-visible:outline-orange rounded">Nosotros</a></li>
+        <li><a href="#planta-y-obras" class="hover:text-orange focus-visible:outline-2 focus-visible:outline-orange rounded">Planta y obras</a></li>
+        <li><a href="#cotiza-ahora" class="hover:text-orange focus-visible:outline-2 focus-visible:outline-orange rounded">Cotiza ahora</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="max-w-6xl mx-auto mt-10 pt-6 border-t border-ink-800 text-caption text-paper-faint">
+    © {year} {contacto.empresa}. Entregable de muestra — algunos datos de contacto son placeholders pendientes de confirmación del cliente.
+  </p>
+</footer>

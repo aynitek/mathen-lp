@@ -1,0 +1,79 @@
+---
+/**
+ * Escena 2/8 — `la-materia` (scroll global 0.12–0.26).
+ * 3D: la plancha se ondula en perfil TR4, brillo especular recorriendo las crestas.
+ * El texto vive a la izquierda (max-w-xl): la mitad derecha queda para el 3D, y ahí
+ * mismo se anclan las anotaciones técnicas (pines + línea dibujada) que señalan lo
+ * que el corte muestra detrás, más un ticker de formatos al pie para no dejar el
+ * tramo bajo del viewport vacío.
+ */
+import MotionMarquee from '../components/ui/MotionMarquee.astro';
+
+const chips = ['AZ-150', '0.30 mm – 0.60 mm', 'Prepintado o natural'];
+const tickerItems = ['TR4', 'TR5', 'TR6', 'AZ-150', '0.30–0.60 MM', 'PREPINTADO', 'NATURAL'];
+---
+
+<section id="la-materia" class="relative z-10 min-h-[140vh] flex items-center bg-transparent px-6 py-24 overflow-hidden">
+  <div class="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] bg-gradient-to-r from-ink-950/95 from-30% via-ink-950/88 via-60% to-transparent" aria-hidden="true"></div>
+
+  <div data-reveal-group class="relative bloque-izq">
+    <h2 data-reveal data-split="lines" class="on-canvas font-display font-semibold text-display-lg leading-[1] tracking-[-0.02em] text-paper">
+      Acero Aluzinc AZ-150: no se oxida ni corroe
+    </h2>
+
+    <p data-reveal class="mt-6 text-body-lg text-paper-dim">
+      Es la base de todas nuestras líneas: alma de acero estructural de calidad AZ-150, recubierta en Aluzinc,
+      resistente a la intemperie desde el primer día de instalación.
+    </p>
+
+    <p data-reveal class="mt-4 text-body text-paper-dim">
+      Sobre esa base se fabrican calaminas rectas y curvas, paneles sándwich y placas colaborantes: un mismo
+      material probado, adaptado al espesor y la forma que cada obra necesita.
+    </p>
+
+    <ul data-reveal class="mt-7 flex flex-wrap gap-2">
+      {
+        chips.map((chip) => (
+          <li class="label-tec rounded-full border border-ink-600 bg-ink-900/60 backdrop-blur-sm px-4 py-1.5 text-paper">
+            {chip}
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <!-- Anotaciones técnicas sobre el tramo derecho (reservado al 3D): pines + cota dibujada -->
+  <div class="hidden lg:block absolute pointer-events-none" style="top:22%; left:60%;" data-reveal-group>
+    <svg class="w-40 h-16 overflow-visible text-orange/70" viewBox="0 0 160 64" aria-hidden="true">
+      <circle cx="4" cy="4" r="3.5" fill="currentColor" />
+      <path data-draw d="M4,4 L90,4" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1" />
+    </svg>
+    <span data-reveal class="label-tec absolute left-24 top-0 -translate-y-1/2 text-paper-dim whitespace-nowrap">
+      AZ-150 · corte de referencia
+    </span>
+  </div>
+
+  <div class="hidden lg:block absolute pointer-events-none" style="top:58%; left:72%;" data-reveal-group>
+    <svg class="w-40 h-16 overflow-visible text-orange/70" viewBox="0 0 160 64" aria-hidden="true">
+      <circle cx="4" cy="4" r="3.5" fill="currentColor" />
+      <path data-draw d="M4,4 L70,4" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1" />
+    </svg>
+    <span data-reveal class="label-tec absolute left-20 top-0 -translate-y-1/2 text-paper-dim whitespace-nowrap">
+      0.30 – 0.60 mm
+    </span>
+  </div>
+
+  <!-- Ticker de formatos: llena el tramo inferior del viewport sin párrafos nuevos -->
+  <div class="absolute bottom-8 inset-x-0 px-6">
+    <MotionMarquee items={tickerItems} ariaLabel="Formatos y acabados disponibles del Aluzinc AZ-150" />
+  </div>
+</section>
+
+<script>
+  import { revealIn, addDepthParallax } from '../components/ui/scrollReveal';
+  import { drawLinesIn } from '../components/ui/techDraw';
+  const root = document.getElementById('la-materia');
+  revealIn(root);
+  drawLinesIn(root);
+  addDepthParallax(root);
+</script>

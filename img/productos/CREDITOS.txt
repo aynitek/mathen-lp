@@ -1,0 +1,17 @@
+Imágenes de referencia del catálogo — todas descargadas de Pexels (licencia Pexels: uso
+comercial libre, sin atribución obligatoria) y servidas localmente desde este directorio,
+optimizadas a máx. 1600px de ancho y calidad ~55-72.
+
+calamina-aluzinc.jpg          https://www.pexels.com/photo/33930005/
+panel-sandwich-poliuretano.jpg https://www.pexels.com/photo/18289258/
+panel-sandwich-poliestireno.jpg https://www.pexels.com/photo/20170984/
+placa-colaborante.jpg          https://www.pexels.com/photo/10682523/
+policarbonato.jpg              https://www.pexels.com/photo/34006095/
+cobertura-upvc.jpg             https://www.pexels.com/photo/33184446/
+accesorios-obra.jpg            https://www.pexels.com/photo/30496227/
+
+Nota: placa-colaborante.jpg y calamina-aluzinc.jpg son la mejor aproximación visual
+disponible en bancos gratuitos (no existe foto de stock de "steel deck"/placa colaborante
+real como encofrado de losa); representan el material/la obra en espíritu, no el producto
+exacto. Reemplazar por fotografía real de planta apenas el cliente la entregue
+([[DATO PENDIENTE]] en `_brief/01-contenido-y-estructura.md`, sección H).

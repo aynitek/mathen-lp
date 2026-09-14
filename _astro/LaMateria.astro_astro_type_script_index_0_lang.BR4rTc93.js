@@ -1,0 +1,1 @@
+import{n as e,t}from"./scrollReveal.OVkgBPhO.js";import{t as n}from"./techDraw.DBJq1DhD.js";var r=document.getElementById(`la-materia`);e(r),n(r),t(r);

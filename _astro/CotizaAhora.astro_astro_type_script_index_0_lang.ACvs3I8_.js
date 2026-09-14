@@ -1,0 +1,1 @@
+import{n as e}from"./scrollReveal.OVkgBPhO.js";import{t}from"./techDraw.DBJq1DhD.js";var n=document.getElementById(`cotiza-ahora`);e(n),t(n);

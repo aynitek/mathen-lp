@@ -1,0 +1,1 @@
+import{n as e,t}from"./scrollReveal.OVkgBPhO.js";import{t as n}from"./techDraw.DBJq1DhD.js";import{t as r}from"./techCounter.pg5QUGD3.js";var i=document.getElementById(`como-se-arma`);e(i),n(i),t(i,16);var a=document.getElementById(`nucleo-counter`);i&&a&&r(a,i,30,200,` mm`);

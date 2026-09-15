@@ -119,13 +119,26 @@ export function revealIn(root: ParentNode | null): void {
       });
     };
 
+    // OJO: `pause()` sin argumento, no `pause(0)`. `pause(0)` no solo pausa: hace un
+    // seek al tiempo 0 de esa timeline, lo que para los `[data-reveal]` SIN
+    // `data-split` (la timeline anima `opacity` del propio elemento, no de líneas
+    // internas) fuerza su opacidad de vuelta al valor de arranque de la entrada
+    // (0) en el mismo frame, ANTES de que la salida empiece a interpolar — el
+    // elemento se apaga de golpe y la salida ya no tiene nada que animar (medido:
+    // el párrafo de "cotiza-ahora" pasaba de opacidad 1 a 0 en un solo frame).
+    // Para el titular con `data-split` no se notaba porque su opacidad de
+    // contenedor ya vale 1 siempre (lo que anima la entrada son las líneas
+    // internas), pero el párrafo y cualquier bloque sin `data-split` sí comparten
+    // la propiedad `opacity` con la timeline contraria. Pausar sin mover el
+    // playhead conserva el valor visual actual y deja que la otra timeline
+    // interpole desde ahí.
     const playIn = () => {
-      tlOut.pause(0);
+      tlOut.pause();
       setWillChange(true);
       tlIn.restart();
     };
     const playOut = () => {
-      tlIn.pause(0);
+      tlIn.pause();
       setWillChange(true);
       tlOut.restart();
     };
@@ -137,6 +150,8 @@ export function revealIn(root: ParentNode | null): void {
     // y la entrada nunca llega a ejecutarse — el bloque se queda en opacity:0.
     const pinned = group.closest<HTMLElement>('[data-pin-wrap]');
 
+    // Disparador de ENTRADA: intacto, tal como estaba. `start`/`end` calibrados para
+    // el momento en que aparece leyendo hacia abajo; no se toca.
     ScrollTrigger.create({
       trigger: group,
       start: 'top 80%',
@@ -144,11 +159,39 @@ export function revealIn(root: ParentNode | null): void {
       ...(pinned ? { pinnedContainer: pinned } : {}),
       onEnter: playIn,
       onEnterBack: playIn,
-      // La salida existe para cuando el bloque se va de pantalla. Un bloque pineado
-      // NO se va: se queda fijo mientras dura el pin. Dispararle la salida ahí lo
-      // dejaba invisible con el carrusel corriendo debajo y un hueco donde va el titular.
-      ...(pinned ? {} : { onLeave: playOut, onLeaveBack: playOut }),
     });
+
+    // Disparadores de SALIDA: dedicados y separados del de entrada (no comparten
+    // `start`/`end` con él) para poder darle a la animación de salida un margen de
+    // pantalla amplio antes de que el bloque cruce el borde del viewport.
+    //
+    // Medido con rueda real (900px de viewport, ~2750px/s): con el disparador de
+    // entrada reusado para la salida (`start: 'top 80%'` ≈ 720px), al subir solo
+    // quedaban ~180px de recorrido antes de salir de cuadro por abajo — la salida,
+    // de 0.42s a esa velocidad, terminaba de tocar por completo fuera de pantalla.
+    // Adelantar el disparador a 'top 20%'/'bottom 80%' deja ~700px de recorrido
+    // visible en cada sentido, suficiente para que la mayor parte del desvanecido
+    // ocurra con el elemento todavía dentro del viewport.
+    //
+    // Un bloque pineado (el catálogo) NO se va de pantalla: se queda fijo mientras
+    // dura el pin. Dispararle la salida ahí lo dejaba invisible con el carrusel
+    // corriendo debajo y un hueco donde va el titular — se mantiene la exclusión.
+    if (!pinned) {
+      // Sale por ARRIBA: se sigue bajando más allá de la sección (ya se leyó).
+      ScrollTrigger.create({
+        trigger: group,
+        start: 'top 80%',
+        end: 'bottom 80%',
+        onLeave: playOut,
+      });
+      // Sale por ABAJO: se sube de vuelta hacia la sección anterior.
+      ScrollTrigger.create({
+        trigger: group,
+        start: 'top 20%',
+        end: 'bottom top',
+        onLeaveBack: playOut,
+      });
+    }
   });
 }
 

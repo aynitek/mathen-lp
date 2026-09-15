@@ -159,6 +159,11 @@ export function revealIn(root: ParentNode | null): void {
       ...(pinned ? { pinnedContainer: pinned } : {}),
       onEnter: playIn,
       onEnterBack: playIn,
+      // La salida hacia ARRIBA (seguir bajando) se queda atada al `end` de este
+      // disparador: 'bottom 15%', o sea cuando el bloque ya está saliendo por el
+      // borde superior. Intentar adelantarla la disparaba a los pocos cientos de
+      // píxeles de haber entrado y el texto se apagaba casi en cuanto aparecía.
+      ...(pinned ? {} : { onLeave: playOut }),
     });
 
     // Disparadores de SALIDA: dedicados y separados del de entrada (no comparten
@@ -177,14 +182,11 @@ export function revealIn(root: ParentNode | null): void {
     // dura el pin. Dispararle la salida ahí lo dejaba invisible con el carrusel
     // corriendo debajo y un hueco donde va el titular — se mantiene la exclusión.
     if (!pinned) {
-      // Sale por ARRIBA: se sigue bajando más allá de la sección (ya se leyó).
-      ScrollTrigger.create({
-        trigger: group,
-        start: 'top 80%',
-        end: 'bottom 80%',
-        onLeave: playOut,
-      });
-      // Sale por ABAJO: se sube de vuelta hacia la sección anterior.
+      // Sale por ABAJO (el usuario SUBE y deja atrás la sección). Este es el único
+      // disparador de salida dedicado, y existe porque reutilizar el de entrada
+      // ('top 80%' ≈ 720px) dejaba solo ~180px de recorrido visible: a velocidad
+      // normal de rueda la salida terminaba entera fuera de pantalla y se percibía
+      // como una desaparición seca. Con 'top 20%' quedan ~700px visibles.
       ScrollTrigger.create({
         trigger: group,
         start: 'top 20%',

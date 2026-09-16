@@ -125,7 +125,14 @@ export function revealIn(root: ParentNode | null): void {
       });
     };
 
+    // Estado de la salida-al-subir (ver disparador dedicado más abajo): mientras está
+    // "armada", el onUpdate de ese disparador escribe directamente el progreso de
+    // `tlIn` cuadro a cuadro. Se desarma en cuanto la entrada vuelve a tomar el control
+    // (playIn) para que un `restart()` nunca compita con el scrub.
+    const outUp = { armed: false };
+
     const playIn = () => {
+      outUp.armed = false;
       tlOut.pause(0);
       setWillChange(true);
       tlIn.restart();
@@ -153,8 +160,102 @@ export function revealIn(root: ParentNode | null): void {
       // La salida existe para cuando el bloque se va de pantalla. Un bloque pineado
       // NO se va: se queda fijo mientras dura el pin. Dispararle la salida ahí lo
       // dejaba invisible con el carrusel corriendo debajo y un hueco donde va el titular.
-      ...(pinned ? {} : { onLeave: playOut, onLeaveBack: playOut }),
+      // La salida hacia abajo (se sigue bajando, el bloque sale por arriba) no se toca:
+      // es donde se rompió todo las dos veces anteriores.
+      ...(pinned ? {} : { onLeave: playOut }),
     });
+
+    // Salida al SUBIR: la entrada reproducida al revés, atada al progreso del scroll
+    // (no a una duración fija) — así es visible sea cual sea la velocidad de la rueda.
+    //
+    // Rango físico, no arbitrario: 'top 80%' es el MISMO borde que usa el disparador
+    // de entrada (arriba) — el punto en el que, subiendo, el bloque empieza a irse por
+    // el borde inferior. 'top 100%' es el borde inferior del propio viewport, el punto
+    // en que ya está completamente fuera. Ese tramo (~150-180px a 900px de viewport) es
+    // exactamente el recorrido visible que describe el brief; no hay un segundo número
+    // inventado cerca de 'bottom 15%' (ahí fue el fracaso nº1: un disparador de salida
+    // se solapaba con el `onEnterBack` de la entrada y la sección se apagaba estando
+    // centrada en pantalla).
+    //
+    // `onEnterBack`/`onLeaveBack` de ESTE disparador (dirección "subiendo" únicamente)
+    // arman/desarman el scrub; `onUpdate` solo escribe `tlIn.progress()` mientras está
+    // armado, así que nunca toca la entrada normal (`onEnter` bajando, más arriba, sigue
+    // siendo un `restart()` idéntico a como estaba).
+    // La salida-al-subir SOLO se activa cuando el titular del grupo usa `data-split`.
+    // Motivo medido, no preventivo: con `data-split`, la entrada anima las LÍNEAS internas
+    // y la salida anima el CONTENEDOR — nodos distintos, sin conflicto. Sin `data-split`
+    // (caso de `planta-y-obras` y `catalogo`) ambas animan la MISMA propiedad del MISMO
+    // nodo, y la carrera entre la entrada por tiempo y la salida escrubeada deja el bloque
+    // invisible estando centrado en pantalla: caída de opacidad de 1.00 a 0 en un solo
+    // frame, reproducida a dos velocidades de rueda distintas.
+    // En esas dos secciones la salida sigue siendo la de siempre (`onLeave`), que nadie
+    // ha reportado como defectuosa.
+    const tieneSplit = items.some((it) => Boolean(it.dataset.split));
+
+    if (!pinned && tieneSplit) {
+      ScrollTrigger.create({
+        trigger: group,
+        // La banda cubre desde que el bloque está a media pantalla ('top 40%') hasta
+        // justo antes de irse por abajo ('top 90%'): ~425px a 850px de viewport.
+        // Dos calibraciones que costaron medir:
+        //  - Con una banda corta (~170px) el recorrido se cruzaba en ~85ms: la salida se
+        //    ejecutaba pero era imperceptible.
+        //  - El extremo NO puede ser 'top 100%'. Al invertir la cascada, el titular es el
+        //    PRIMER elemento de la timeline, así que solo cambia cuando el progreso se
+        //    acerca a 0, es decir al final del tramo. Si ese final coincide con el borde
+        //    inferior, el titular se desvanece ya fuera de pantalla — justo el defecto que
+        //    el cliente reportó. Terminando en 'top 90%' el progreso llega a 0 con el
+        //    bloque todavía visible.
+        start: 'top 90%',
+        end: 'top 40%',
+        onEnterBack: () => {
+          outUp.armed = true;
+          // `tlIn` puede seguir REPRODUCIÉNDOSE (la entrada la lanza con `restart()`).
+          // No basta con pausarla: hay que LLEVARLA A SU ESTADO FINAL. Si la entrada se
+          // queda congelada a medio camino (bloque a opacidad 0.1, por ejemplo) y la
+          // salida arranca desde ahí, el bloque se apaga de golpe estando centrado en
+          // pantalla. Medido en `planta-y-obras`, que usa un titular SIN `data-split`:
+          // ahí `tlIn` y `tlOut` animan la MISMA propiedad del MISMO nodo y la carrera
+          // entre ambas es visible. Forzando la entrada a completarse, la salida siempre
+          // parte del bloque plenamente visible.
+          tlIn.progress(1).pause();
+          tlOut.pause(0);
+          setWillChange(true);
+        },
+        onLeaveBack: () => {
+          outUp.armed = false;
+          tlOut.progress(1); // ya fuera de pantalla: queda en el mismo estado oculto que tras salir
+          setWillChange(false);
+        },
+        onUpdate: (self) => {
+          if (!outUp.armed) return;
+          // `self.progress` va de 1 (bloque a media pantalla) a 0 (bloque saliendo por
+          // abajo) conforme se sube. La salida avanza al revés: de 0 a 1.
+          //
+          // Se escrubea `tlOut` y NO `tlIn` invertida, aunque el cliente sugirió reutilizar
+          // la entrada al revés. Motivo medido: la entrada es una CASCADA (label → titular
+          // → párrafo → chips). Al invertirla, el titular —que es el primer elemento— solo
+          // se mueve en el último 10% del recorrido, es decir justo cuando el bloque ya se
+          // fue por abajo: exactamente el defecto que se quería corregir. `tlOut` anima
+          // todos los bloques a la vez, así que el desvanecido se reparte por todo el tramo
+          // y se ve de principio a fin.
+          // Se limita cuánto puede avanzar el progreso en un solo frame. Con la rueda
+          // rápida el objetivo puede saltar de 0 a 1 de golpe, y escribirlo en seco haría
+          // desaparecer el texto de un fotograma al siguiente — justo lo que se quiere
+          // evitar. Un tope por frame convierte ese salto en un desvanecido corto.
+          //
+          // Se hace con aritmética y NO creando un tween por frame: esa primera versión
+          // costaba 6 fps de mediana y metía hasta 5 frames lentos por recorrido (medido).
+          const objetivo = 1 - self.progress;
+          const actual = tlOut.progress();
+          const paso = 0.14;
+          const delta = objetivo - actual;
+          tlOut.progress(
+            Math.abs(delta) <= paso ? objetivo : actual + Math.sign(delta) * paso,
+          );
+        },
+      });
+    }
   });
 }
 

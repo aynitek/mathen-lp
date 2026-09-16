@@ -128,8 +128,13 @@ function buildTimelineIn(items: HTMLElement[]): gsap.core.Timeline {
       // Es el defecto que el cliente reportó en "Siete líneas, un solo proveedor", y no
       // lo detecta ninguna sonda de opacidad porque no es un cambio de opacidad.
       // La entrada se consigue igual de bien con opacidad + desplazamiento.
-      gsap.set(item, { opacity: 0, y: 32 });
-      tl.to(item, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, start);
+      // Recorrido algo mayor y salida más marcada que antes: los textos informativos SÍ
+      // se animaban (18 pasos intermedios de opacidad, medido), pero el gesto era
+      // demasiado corto para leerse como animación, sobre todo desde que se quitó el
+      // desenfoque. Se mantiene la jerarquía: titulares por líneas, cuerpo con fundido
+      // ascendente — line-revelar párrafos largos los vuelve pesados y lentos.
+      gsap.set(item, { opacity: 0, y: 44 });
+      tl.to(item, { opacity: 1, y: 0, duration: 0.62, ease: 'power3.out' }, start);
     }
   });
 

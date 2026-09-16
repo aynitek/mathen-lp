@@ -66,7 +66,7 @@ function buildTimelineIn(items: HTMLElement[]): gsap.core.Timeline {
       // solo reanima las líneas internas, al volver a entrar quedan animándose dentro de
       // un contenedor invisible y el titular no reaparece nunca. Era la causa de que el
       // texto "desapareciera y no volviera".
-      tl.set(item, { opacity: 1, y: 0, filter: 'none' }, start);
+      tl.set(item, { opacity: 1, y: 0 }, start);
       tl.to(
         targets,
         {
@@ -79,12 +79,15 @@ function buildTimelineIn(items: HTMLElement[]): gsap.core.Timeline {
         start,
       );
     } else {
-      gsap.set(item, { opacity: 0, y: 32, filter: 'blur(4px)' });
-      tl.to(
-        item,
-        { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.5, ease: 'power2.out' },
-        start,
-      );
+      // Sin `filter` en la ENTRADA. El navegador rasteriza el texto de otra forma
+      // mientras tiene un filtro aplicado (pierde el suavizado subpíxel) y lo vuelve a
+      // dibujar nítido en cuanto el filtro desaparece: ese re-dibujado del último
+      // fotograma se percibe como un parpadeo justo antes de que el bloque se estabilice.
+      // Es el defecto que el cliente reportó en "Siete líneas, un solo proveedor", y no
+      // lo detecta ninguna sonda de opacidad porque no es un cambio de opacidad.
+      // La entrada se consigue igual de bien con opacidad + desplazamiento.
+      gsap.set(item, { opacity: 0, y: 32 });
+      tl.to(item, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, start);
     }
   });
 
@@ -94,10 +97,12 @@ function buildTimelineIn(items: HTMLElement[]): gsap.core.Timeline {
 /** Salida: siempre más simple y más rápida que la entrada (60%), blur + opacidad. */
 function buildTimelineOut(items: HTMLElement[]): gsap.core.Timeline {
   const tl = gsap.timeline({ paused: true });
+  // Sin `filter` tampoco aquí: el texto no debe pasar nunca por un filtro, ni entrando
+  // ni saliendo. Al escrubear la salida hacia atrás el bloque volvería de desenfocado a
+  // nítido estando visible, y ese re-dibujado es justo el parpadeo que se quiere eliminar.
   tl.to(items, {
     opacity: 0,
     y: -16,
-    filter: 'blur(4px)',
     duration: 0.42,
     ease: 'power2.in',
     stagger: 0.05,
@@ -117,18 +122,25 @@ export function revealIn(root: ParentNode | null): void {
     if (items.length === 0) return;
 
     if (reduced) {
-      gsap.set(items, { opacity: 1, y: 0, filter: 'none' });
+      gsap.set(items, { opacity: 1, y: 0 });
       return;
     }
 
     const tlIn = buildTimelineIn(items);
     const tlOut = buildTimelineOut(items);
 
-    const setWillChange = (on: boolean) => {
-      items.forEach((it) => {
-        it.style.willChange = on ? 'transform, opacity, filter' : '';
-      });
-    };
+    // Antes se ponía y se QUITABA `will-change` alrededor de cada animación. Quitarlo
+    // obliga al navegador a destruir la capa de composición del elemento y a repintarlo:
+    // con un `filter` aplicado encima, ese repintado se ve como un destello justo cuando
+    // la animación termina — el parpadeo que reportó el cliente en "Siete líneas, un solo
+    // proveedor". No lo detectaba ninguna sonda de opacidad porque no es un cambio de
+    // opacidad, sino de capa.
+    // Se declara una sola vez, de forma estable, y no se toca más: el elemento se queda
+    // en su propia capa y no hay promoción/destrucción repetida.
+    items.forEach((it) => {
+      it.style.willChange = 'transform, opacity';
+    });
+    const setWillChange = (_on: boolean) => {};
 
     // Estado de la salida-al-subir (ver disparador dedicado más abajo): mientras está
     // "armada", el onUpdate de ese disparador escribe directamente el progreso de

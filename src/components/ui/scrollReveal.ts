@@ -147,6 +147,7 @@ export function revealIn(root: ParentNode | null): void {
     // `tlIn` cuadro a cuadro. Se desarma en cuanto la entrada vuelve a tomar el control
     // (playIn) para que un `restart()` nunca compita con el scrub.
     const outUp = { armed: false };
+    let ultimaRevision = 0;
 
     const playIn = () => {
       outUp.armed = false;
@@ -182,6 +183,27 @@ export function revealIn(root: ParentNode | null): void {
       ...(pinned ? { pinnedContainer: pinned } : {}),
       onEnter: playIn,
       onEnterBack: playIn,
+      // Red de seguridad. Sobre la opacidad de un mismo elemento escriben tres cosas:
+      // la entrada, la salida, y el escrubeo de la salida-al-subir. Con scroll errático
+      // (ráfagas cortas cambiando de dirección) el orden de los eventos puede dejar un
+      // bloque en opacidad 0 sin que quede ningún disparador pendiente que lo recupere:
+      // reproducido, un bloque de `la-materia` se quedaba invisible en pantalla de forma
+      // permanente. Mientras el grupo está dentro del rango de lectura y no se está
+      // ejecutando ninguna animación, si algo quedó invisible se relanza la entrada.
+      onUpdate: () => {
+        if (outUp.armed || tlIn.isActive() || tlOut.isActive()) return;
+        const ahora = performance.now();
+        if (ahora - ultimaRevision < 200) return;
+        ultimaRevision = ahora;
+        const r = group.getBoundingClientRect();
+        if (r.bottom <= 0 || r.top >= window.innerHeight) return;
+        const oculto = items.some((it) => {
+          const rect = it.getBoundingClientRect();
+          if (rect.bottom <= 0 || rect.top >= window.innerHeight) return false;
+          return Number(gsap.getProperty(it, 'opacity')) < 0.9;
+        });
+        if (oculto) playIn();
+      },
       // La salida existe para cuando el bloque se va de pantalla. Un bloque pineado
       // NO se va: se queda fijo mientras dura el pin. Dispararle la salida ahí lo
       // dejaba invisible con el carrusel corriendo debajo y un hueco donde va el titular.

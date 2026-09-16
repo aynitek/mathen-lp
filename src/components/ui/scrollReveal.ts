@@ -21,6 +21,48 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
 
 let registered = false;
+
+/**
+ * Revisores de "bloque atascado invisible", uno por grupo.
+ * Se ejecutan con un temporizador propio y NO solo desde el `onUpdate` de
+ * ScrollTrigger: ese callback solo se dispara mientras el scroll se mueve, así que si
+ * el usuario se detiene justo después de dejar un bloque en mal estado, nunca se
+ * volvía a comprobar y el texto se quedaba invisible mientras él miraba la sección.
+ */
+const revisores: Array<() => void> = [];
+let revisorTimer = 0;
+
+/**
+ * Última dirección de scroll: +1 bajando, -1 subiendo.
+ * La despedida al subir solo tiene sentido mientras el usuario SIGUE subiendo. Si se
+ * detiene o cambia a bajar, un bloque a media pantalla debe volver a leerse: no puede
+ * quedarse invisible delante de él.
+ */
+let ultimaDireccion = 1;
+let ultimoY = 0;
+/** Marca de tiempo del último movimiento de scroll: sirve para saber si el usuario
+ *  sigue en movimiento o ya se detuvo a leer. */
+let ultimoMovimiento = 0;
+
+function arrancarRevisor(): void {
+  if (revisorTimer) return;
+  ultimoY = window.scrollY;
+  window.addEventListener(
+    'scroll',
+    () => {
+      const y = window.scrollY;
+      if (Math.abs(y - ultimoY) > 2) {
+        ultimaDireccion = y > ultimoY ? 1 : -1;
+        ultimoY = y;
+        ultimoMovimiento = performance.now();
+      }
+    },
+    { passive: true },
+  );
+  revisorTimer = window.setInterval(() => {
+    for (const rev of revisores) rev();
+  }, 250);
+}
 function ensureRegistered() {
   if (!registered) {
     gsap.registerPlugin(ScrollTrigger, SplitText);
@@ -177,6 +219,55 @@ export function revealIn(root: ParentNode | null): void {
 
     tlIn.eventCallback('onComplete', () => setWillChange(false));
 
+    const revisar = () => {
+      const t = performance.now();
+      if (outUp.armed && t - ultimoScrub > 400) outUp.armed = false; // armado caduco
+      if (outUp.armed || tlIn.isActive() || tlOut.isActive()) return;
+      if (t - ultimaRevision < 200) return;
+      ultimaRevision = t;
+      const r = group.getBoundingClientRect();
+      if (r.bottom <= 0 || r.top >= window.innerHeight) return;
+      // Se decide por POSICIÓN y POR ELEMENTO, no por una bandera de estado ni por la
+      // posición del grupo:
+      //  - Una bandera se desincroniza con el scroll errático y deja el bloque apagado
+      //    para siempre (reportado en "Se fabrica a la medida de tu obra").
+      //  - Mirar el grupo tampoco basta: en grupos altos un párrafo puede estar en zona
+      //    de lectura mientras el grupo entero todavía no lo está, y ese párrafo se
+      //    quedaba invisible (reportado en "Acero Aluzinc": "Es la base de todas...").
+      //
+      // Regla: un elemento debe verse si está en la ZONA DE LECTURA (por encima del 40%
+      // de la pantalla) o si el usuario ya NO está subiendo. La despedida al subir solo
+      // se respeta mientras el gesto de subir continúa; en cuanto el usuario se detiene o
+      // baja, un bloque a media pantalla tiene que volver a leerse.
+      //
+      // Medido: parándose tras scroll errático, había bloques invisibles en `top` 487 y
+      // 748 de un viewport de 850 — muy por debajo del 40%, pero delante de los ojos del
+      // usuario. Mirar solo la posición los dejaba apagados; mirar solo la dirección
+      // rompía la despedida. Hacen falta las dos cosas.
+      // La despedida se respeta MIENTRAS el usuario sigue subiendo. En cuanto se detiene
+      // a mirar, no puede quedar texto invisible delante de él: si lleva medio segundo
+      // quieto, se restituye lo que esté en pantalla.
+      // Es la única forma de honrar los dos requisitos del cliente a la vez:
+      //   "cuando subo, la despedida debe quedarse" (mientras se mueve)
+      //   "nunca debería dejar de aparecer cuando estoy en ese lugar" (cuando se detiene)
+      const zonaLectura = window.innerHeight * 0.4;
+      const subiendo = ultimaDireccion < 0;
+      const quieto = t - ultimoMovimiento > 500;
+      const oculto = items.some((it) => {
+        const rect = it.getBoundingClientRect();
+        if (rect.bottom <= 0 || rect.top >= window.innerHeight) return false;
+        // despidiéndose y todavía en movimiento: no se toca
+        if (subiendo && !quieto && rect.top > zonaLectura) return false;
+        return Number(gsap.getProperty(it, 'opacity')) < 0.9;
+      });
+      if (!oculto) return;
+      yaEntrado = false;
+      playIn();
+    };
+
+    revisores.push(revisar);
+    arrancarRevisor();
+
     // Si el grupo vive dentro de un contenedor que se hace `pin` (el catálogo),
     // ScrollTrigger necesita saberlo: si no, calcula mal la posición del disparador
     // y la entrada nunca llega a ejecutarse — el bloque se queda en opacity:0.
@@ -204,34 +295,7 @@ export function revealIn(root: ParentNode | null): void {
       // reproducido, un bloque de `la-materia` se quedaba invisible en pantalla de forma
       // permanente. Mientras el grupo está dentro del rango de lectura y no se está
       // ejecutando ninguna animación, si algo quedó invisible se relanza la entrada.
-      onUpdate: () => {
-        const t = performance.now();
-        if (outUp.armed && t - ultimoScrub > 400) outUp.armed = false; // armado caduco
-        if (outUp.armed || tlIn.isActive() || tlOut.isActive()) return;
-        // Solo se repara lo que quedó oculto POR ERROR. Si el grupo se despidió a
-        // propósito (salida hacia abajo, o salida al subir ya completada) debe QUEDARSE
-        // despedido: `yaEntrado` es false en esos casos. Sin esta condición el titular
-        // se desvanecía correctamente al subir y la red de seguridad lo volvía a
-        // encender un instante después.
-        if (!yaEntrado) return;
-        if (t - ultimaRevision < 200) return;
-        ultimaRevision = t;
-        const r = group.getBoundingClientRect();
-        if (r.bottom <= 0 || r.top >= window.innerHeight) return;
-        const oculto = items.some((it) => {
-          const rect = it.getBoundingClientRect();
-          if (rect.bottom <= 0 || rect.top >= window.innerHeight) return false;
-          return Number(gsap.getProperty(it, 'opacity')) < 0.9;
-        });
-        if (!oculto) return;
-        // Se REPARA en silencio, no se relanza la entrada. `playIn()` reinicia la cascada
-        // completa: los bloques que ya estaban visibles se apagaban y volvían a entrar
-        // animados, y eso se ve como un texto que "ya estaba cargado, desaparece y vuelve
-        // a aparecer". La reparación solo lleva al grupo a su estado final, sin animar.
-        tlOut.pause(0);
-        tlIn.progress(1).pause();
-        yaEntrado = true;
-      },
+      onUpdate: revisar,
       // La salida existe para cuando el bloque se va de pantalla. Un bloque pineado
       // NO se va: se queda fijo mientras dura el pin. Dispararle la salida ahí lo
       // dejaba invisible con el carrusel corriendo debajo y un hueco donde va el titular.

@@ -210,7 +210,12 @@ export function revealIn(root: ParentNode | null): void {
       // opacidad a 0 y vuelve a animar: al revisitar una sección (bajar, subir y volver
       // a bajar) los bloques ya visibles se apagaban un instante y entraban otra vez.
       // Medido: 9 elementos con ese destello en la segunda bajada.
-      if (yaEntrado && tlIn.progress() === 1 && !tlIn.isActive() && !tlOut.isActive()) return;
+      // Se evita relanzar la entrada en dos casos:
+      //  - ya terminó (progreso 1): reiniciar apagaría un bloque que ya se lee.
+      //  - está EN CURSO: reiniciarla a media animación hace que el texto ya visible se
+      //    apague y vuelva a entrar. Es lo que el cliente describió como "sale precargado,
+      //    desaparece y aparece con la animación".
+      if (yaEntrado && (tlIn.isActive() || tlIn.progress() === 1) && !tlOut.isActive()) return;
       yaEntrado = true;
       tlOut.pause(0);
       setWillChange(true);

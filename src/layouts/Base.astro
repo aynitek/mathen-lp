@@ -54,6 +54,21 @@ import { asset } from '../lib/asset';
     />
 
     <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+    <!--
+      Los bloques con `data-reveal` llegan VISIBLES en el HTML y era JavaScript quien los
+      apagaba tras hidratar: el texto se pintaba, desaparecía y volvía a entrar animado.
+      Esta marca se aplica ANTES del primer pintado, así que el bloque nunca llega a verse
+      antes de su animación. Va inline y sin `type=module` para que no se difiera.
+      El temporizador es la red de seguridad: si el JS de animación no llegara a
+      ejecutarse, el texto aparece igual en lugar de quedarse invisible para siempre.
+    -->
+    <script is:inline>
+      document.documentElement.classList.add('reveal-armado');
+      setTimeout(function () {
+        document.documentElement.classList.remove('reveal-armado');
+      }, 2500);
+    </script>
   </head>
   <body class="bg-ink-950 text-paper font-body antialiased">
     <slot />

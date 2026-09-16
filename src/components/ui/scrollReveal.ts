@@ -46,7 +46,12 @@ function getSplitTargets(item: HTMLElement, kind: SplitKind): Element[] {
 /** Construye la entrada (timeline pausada) respetando la cascada de lectura. */
 function buildTimelineIn(items: HTMLElement[]): gsap.core.Timeline {
   const tl = gsap.timeline({ paused: true });
-  const GAP = 0.12; // separación entre bloques top-level (label → título → párrafo → chips)
+  // Separación entre bloques de la cascada. Medido: con 0.12 la cascada completa de un
+  // grupo de 6 elementos duraba ~1.3s. Bajando rápido (~6800px/s) el último elemento
+  // todavía no había empezado cuando ya se disparaba la salida: el titular entraba y el
+  // cuerpo de la sección no llegaba a aparecer nunca. Se comprime la cascada para que
+  // quepa dentro del recorrido visible sin perder la sensación de lectura escalonada.
+  const GAP = 0.05;
 
   items.forEach((item, i) => {
     const kind = item.dataset.split as SplitKind | undefined;
@@ -67,7 +72,7 @@ function buildTimelineIn(items: HTMLElement[]): gsap.core.Timeline {
         {
           opacity: 1,
           yPercent: 0,
-          duration: 0.75,
+          duration: 0.55,
           ease: 'power3.out',
           stagger: kind === 'chars' ? 0.018 : kind === 'words' ? 0.035 : 0.07,
         },
@@ -77,7 +82,7 @@ function buildTimelineIn(items: HTMLElement[]): gsap.core.Timeline {
       gsap.set(item, { opacity: 0, y: 32, filter: 'blur(4px)' });
       tl.to(
         item,
-        { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.7, ease: 'power2.out' },
+        { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.5, ease: 'power2.out' },
         start,
       );
     }
@@ -152,8 +157,16 @@ export function revealIn(root: ParentNode | null): void {
 
     ScrollTrigger.create({
       trigger: group,
-      start: 'top 80%',
-      end: 'bottom 15%',
+      start: 'top 92%',
+      // `end` marca cuándo se dispara la salida hacia abajo. Con 'bottom 15%' se
+      // disparaba cuando el borde inferior del GRUPO llegaba al 15% de la pantalla: en
+      // grupos altos (Nosotros tiene titular + misión + visión + 3 pilares) los últimos
+      // elementos seguían perfectamente visibles y se apagaban recién aparecidos — eso es
+      // el parpadeo que se reportó. Con 'bottom top' la salida hacia abajo ocurre cuando
+      // el grupo ya cruzó el borde superior, es decir fuera de la vista: nadie la ve
+      // apagarse. La salida que SÍ se ve es la de subir, que tiene su propio disparador
+      // escrubeado más abajo.
+      end: 'bottom top',
       ...(pinned ? { pinnedContainer: pinned } : {}),
       onEnter: playIn,
       onEnterBack: playIn,

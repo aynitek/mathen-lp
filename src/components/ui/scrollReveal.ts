@@ -148,9 +148,23 @@ export function revealIn(root: ParentNode | null): void {
     // (playIn) para que un `restart()` nunca compita con el scrub.
     const outUp = { armed: false };
     let ultimaRevision = 0;
+    // ¿El grupo ya está en su estado "entrado y visible"? Sirve para no relanzar la
+    // entrada cuando no hace falta.
+    let yaEntrado = false;
+    // Última vez que el escrubeo de la salida-al-subir escribió algo. Si el estado
+    // "armado" se queda colgado (el usuario cambia de dirección a media transición y el
+    // disparador nunca llega a desarmarse), la red de seguridad quedaría bloqueada y el
+    // bloque se quedaría invisible. Se considera caduco pasados 400ms sin actividad.
+    let ultimoScrub = 0;
 
     const playIn = () => {
       outUp.armed = false;
+      // Si el grupo YA está entrado y completo, no se reinicia. Reiniciarlo pone la
+      // opacidad a 0 y vuelve a animar: al revisitar una sección (bajar, subir y volver
+      // a bajar) los bloques ya visibles se apagaban un instante y entraban otra vez.
+      // Medido: 9 elementos con ese destello en la segunda bajada.
+      if (yaEntrado && tlIn.progress() === 1 && !tlIn.isActive() && !tlOut.isActive()) return;
+      yaEntrado = true;
       tlOut.pause(0);
       setWillChange(true);
       tlIn.restart();
@@ -191,10 +205,11 @@ export function revealIn(root: ParentNode | null): void {
       // permanente. Mientras el grupo está dentro del rango de lectura y no se está
       // ejecutando ninguna animación, si algo quedó invisible se relanza la entrada.
       onUpdate: () => {
+        const t = performance.now();
+        if (outUp.armed && t - ultimoScrub > 400) outUp.armed = false; // armado caduco
         if (outUp.armed || tlIn.isActive() || tlOut.isActive()) return;
-        const ahora = performance.now();
-        if (ahora - ultimaRevision < 200) return;
-        ultimaRevision = ahora;
+        if (t - ultimaRevision < 200) return;
+        ultimaRevision = t;
         const r = group.getBoundingClientRect();
         if (r.bottom <= 0 || r.top >= window.innerHeight) return;
         const oculto = items.some((it) => {
@@ -202,7 +217,14 @@ export function revealIn(root: ParentNode | null): void {
           if (rect.bottom <= 0 || rect.top >= window.innerHeight) return false;
           return Number(gsap.getProperty(it, 'opacity')) < 0.9;
         });
-        if (oculto) playIn();
+        if (!oculto) return;
+        // Se REPARA en silencio, no se relanza la entrada. `playIn()` reinicia la cascada
+        // completa: los bloques que ya estaban visibles se apagaban y volvían a entrar
+        // animados, y eso se ve como un texto que "ya estaba cargado, desaparece y vuelve
+        // a aparecer". La reparación solo lleva al grupo a su estado final, sin animar.
+        tlOut.pause(0);
+        tlIn.progress(1).pause();
+        yaEntrado = true;
       },
       // La salida existe para cuando el bloque se va de pantalla. Un bloque pineado
       // NO se va: se queda fijo mientras dura el pin. Dispararle la salida ahí lo
@@ -257,6 +279,11 @@ export function revealIn(root: ParentNode | null): void {
         end: 'top 40%',
         onEnterBack: () => {
           outUp.armed = true;
+          // Se marca actividad AL ARMAR. Si no, `ultimoScrub` vale 0 y la caducidad de
+          // 400ms se cumple en el primer frame: la salida se desarmaba antes de empezar
+          // y no llegaba a verse nunca.
+          ultimoScrub = performance.now();
+          yaEntrado = false; // la salida va a ocultarlo: la próxima entrada sí debe animar
           // `tlIn` puede seguir REPRODUCIÉNDOSE (la entrada la lanza con `restart()`).
           // No basta con pausarla: hay que LLEVARLA A SU ESTADO FINAL. Si la entrada se
           // queda congelada a medio camino (bloque a opacidad 0.1, por ejemplo) y la
@@ -276,6 +303,7 @@ export function revealIn(root: ParentNode | null): void {
         },
         onUpdate: (self) => {
           if (!outUp.armed) return;
+          ultimoScrub = performance.now();
           // `self.progress` va de 1 (bloque a media pantalla) a 0 (bloque saliendo por
           // abajo) conforme se sube. La salida avanza al revés: de 0 a 1.
           //

@@ -9,7 +9,7 @@
  * accesibles con teclado nativo, sin JS.
  */
 import MotionMarquee from '../components/ui/MotionMarquee.astro';
-import productos from '../data/productos.json';
+import { productos } from '../data/publico';
 
 const pur = productos.find((p) => p.id === 'panel-sandwich-poliuretano')!;
 const eps = productos.find((p) => p.id === 'panel-sandwich-poliestireno')!;
@@ -140,14 +140,13 @@ const tickerItems = ['TECHO 2 PERALTES', 'TECHO 3 PERALTES', 'TECHO 4 PERALTES',
 </style>
 
 <script>
-  import { revealIn, addDepthParallax } from '../components/ui/scrollReveal';
+  import { revealIn } from '../components/ui/scrollReveal';
   import { drawLinesIn } from '../components/ui/techDraw';
   import { bindScrubNumber } from '../components/ui/techCounter';
 
   const root = document.getElementById('como-se-arma');
   revealIn(root);
   drawLinesIn(root);
-  addDepthParallax(root, 16);
 
   const counter = document.getElementById('nucleo-counter');
   if (root && counter) {

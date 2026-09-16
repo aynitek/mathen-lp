@@ -5,8 +5,8 @@
  * de éxito y abre WhatsApp (o el cliente de correo) con el mensaje/asunto prellenado.
  */
 import { useState } from 'react';
-import productosData from '../../data/productos.json';
-import contacto from '../../data/contacto.json';
+import { productos as productosData } from '../../data/publico';
+import { contacto } from '../../data/publico';
 import { buildWhatsAppLink, buildContextMessage } from './whatsapp';
 
 interface Producto {

@@ -4,7 +4,7 @@
  * literal de _brief/01-contenido-y-estructura.md sección E.
  * Se mantiene dentro de la paleta navy/naranja del sistema (nunca el verde de marca WhatsApp).
  */
-import contacto from '../../data/contacto.json';
+import { contacto } from '../../data/publico';
 import { buildWhatsAppLink, WHATSAPP_GENERIC_MESSAGE } from './whatsapp';
 
 const href = buildWhatsAppLink(contacto.whatsapp, WHATSAPP_GENERIC_MESSAGE);

@@ -26,7 +26,7 @@
  */
 import Button from '../components/ui/Button.astro';
 import MotionMarquee from '../components/ui/MotionMarquee.astro';
-import productos from '../data/productos.json';
+import { productos } from '../data/publico';
 
 const plancha = productos.find((p) => p.id === 'calamina-plancha-aluzinc-az150')!;
 const formato = plancha.specs.find((s) => s.etiqueta === 'Formato')!;
@@ -147,14 +147,13 @@ const rulerTicks = Array.from({ length: 13 })
 </section>
 
 <script>
-  import { revealIn, addDepthParallax } from '../components/ui/scrollReveal';
+  import { revealIn } from '../components/ui/scrollReveal';
   import { drawLinesIn } from '../components/ui/techDraw';
   import { bindScrubNumber } from '../components/ui/techCounter';
 
   const root = document.getElementById('a-tu-medida');
   revealIn(root);
   drawLinesIn(root);
-  addDepthParallax(root);
 
   const counter = document.getElementById('espesor-counter');
   if (root && counter) {

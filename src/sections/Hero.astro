@@ -5,7 +5,7 @@
  * H1 único de la página — variante 2 del brief: "Fabricado a la medida exacta de tu obra".
  */
 import Button from '../components/ui/Button.astro';
-import contacto from '../data/contacto.json';
+import { contacto } from '../data/publico';
 import { buildWhatsAppLink, WHATSAPP_GENERIC_MESSAGE } from '../components/ui/whatsapp';
 
 const waHref = buildWhatsAppLink(contacto.whatsapp, WHATSAPP_GENERIC_MESSAGE);

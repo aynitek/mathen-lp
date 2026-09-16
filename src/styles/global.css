@@ -65,13 +65,17 @@
      ejecutarse; sin JavaScript el contenido se ve con normalidad. GSAP escribe opacidad
      en línea, que gana a esta regla, así que en cuanto la animación arranca manda ella. */
   html.reveal-armado [data-reveal] {
-    opacity: 0;
+    /* `visibility` y no `opacity`: es la propiedad que GSAP conmuta con `autoAlpha`
+       (https://gsap.com/resources/fouc/). Además saca del árbol de accesibilidad lo que
+       todavía no se ha revelado — con `opacity:0` el lector de pantalla lo leía igual y
+       el tabulador lo enfocaba. */
+    visibility: hidden;
   }
 
   @media (prefers-reduced-motion: reduce) {
     /* Con movimiento reducido no hay animación de entrada: el texto se ve de una. */
     html.reveal-armado [data-reveal] {
-      opacity: 1;
+      visibility: visible;
     }
   }
 

@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import contacto from '../data/contacto.json';
+import { contacto } from '../data/publico';
 
 interface Props {
   title?: string;
@@ -64,11 +64,29 @@ import { asset } from '../lib/asset';
       ejecutarse, el texto aparece igual en lugar de quedarse invisible para siempre.
     -->
     <script is:inline>
-      document.documentElement.classList.add('reveal-armado');
-      setTimeout(function () {
-        document.documentElement.classList.remove('reveal-armado');
-      }, 2500);
+      var raiz = document.documentElement;
+      raiz.classList.add('reveal-armado');
+      // Se desarma en cuanto la pagina termina de cargar, no a los 2.5s a ciegas: el
+      // temporizador ciego GARANTIZABA hasta 2.5s de invisibilidad para cualquier seccion
+      // cuyo script de revelado aun no hubiera corrido, aunque el usuario ya estuviera
+      // mirandola. Quitar la clase no descubre nada indebido: GSAP escribe `visibility`
+      // en linea al construir cada animacion, y el estilo en linea gana a esta regla.
+      var desarmar = function () {
+        raiz.classList.remove('reveal-armado');
+      };
+      if (document.readyState === 'complete') desarmar();
+      else window.addEventListener('load', desarmar, { once: true });
+      // Tope absoluto por si `load` no llegara nunca (una imagen que no resuelve).
+      setTimeout(desarmar, 2500);
     </script>
+    <noscript>
+      <!-- Sin JavaScript no hay animacion que revele nada: el contenido debe verse. -->
+      <style>
+        [data-reveal] {
+          visibility: visible !important;
+        }
+      </style>
+    </noscript>
   </head>
   <body class="bg-ink-950 text-paper font-body antialiased">
     <slot />

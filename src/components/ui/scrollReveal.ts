@@ -208,6 +208,12 @@ export function revealIn(root: ParentNode | null): void {
         const t = performance.now();
         if (outUp.armed && t - ultimoScrub > 400) outUp.armed = false; // armado caduco
         if (outUp.armed || tlIn.isActive() || tlOut.isActive()) return;
+        // Solo se repara lo que quedó oculto POR ERROR. Si el grupo se despidió a
+        // propósito (salida hacia abajo, o salida al subir ya completada) debe QUEDARSE
+        // despedido: `yaEntrado` es false en esos casos. Sin esta condición el titular
+        // se desvanecía correctamente al subir y la red de seguridad lo volvía a
+        // encender un instante después.
+        if (!yaEntrado) return;
         if (t - ultimaRevision < 200) return;
         ultimaRevision = t;
         const r = group.getBoundingClientRect();

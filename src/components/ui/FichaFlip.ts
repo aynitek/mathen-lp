@@ -44,6 +44,20 @@ export function initFichaFlip(
   const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-carousel-card]'));
   let openCard: HTMLElement | null = null;
   let openSlot: HTMLElement | null = null;
+  /**
+   * Padre REAL del que salió la tarjeta, para devolverla exactamente ahí.
+   *
+   * La estructura es `[data-carousel-slide] > [data-carousel-slide-inner] > <article>`, y
+   * esa separación es deliberada: el bucle escribe `x` en la ranura EXTERIOR y el reparto
+   * escribe transform/opacity en el envoltorio INTERIOR, para que nunca escriban la misma
+   * propiedad del mismo nodo. Al cerrar se devolvía la tarjeta a la ranura exterior, no al
+   * envoltorio: quedaba como HERMANA del envoltorio (que mide 456px y seguía ahí, vacío),
+   * así que se apilaba justo debajo. Medido: la tarjeta pasaba de `top` 388 a 840 — los
+   * 452px del salto. Y peor, `CarouselLoop` guarda las referencias a los envoltorios al
+   * arrancar, así que a partir de ese momento el reparto animaba una caja vacía y esa
+   * tarjeta quedaba desconectada para siempre; no se recuperaba ni cambiando de filtro.
+   */
+  let openParent: HTMLElement | null = null;
   let openTrigger: HTMLElement | null = null;
 
   function siblingsOf(card: HTMLElement): HTMLElement[] {
@@ -74,6 +88,7 @@ export function initFichaFlip(
 
     openCard = card;
     openSlot = slot;
+    openParent = card.parentElement;
     openTrigger = trigger;
 
     // Mueve el nodo REAL (no un clon) al escenario de ficha. El slot original
@@ -94,7 +109,13 @@ export function initFichaFlip(
       scale: true,
       absolute: true,
       onComplete: () => {
-        panel?.focus();
+        // `preventScroll` NO es cosmetico. El visor del carrusel mide 28.5rem con
+        // `overflow:hidden`, y `overflow:hidden` SIGUE siendo desplazable por programa:
+        // al enfocar, el navegador desplaza el contenedor para revelar lo enfocado.
+        // Medido: el visor saltaba a `scrollTop` 452 y el carril entero subia 452px con la
+        // pagina quieta, dejando las demas tarjetas cortadas por arriba. Ademas no se
+        // revertia solo — quedaba asi hasta recargar.
+        panel?.focus({ preventScroll: true });
       },
     });
 
@@ -111,8 +132,10 @@ export function initFichaFlip(
 
     const state = Flip.getState(card, { props: 'borderRadius' });
 
-    // Devuelve el nodo real a su slot original: misma posición física, exacta.
-    slot.appendChild(card);
+    // Devuelve el nodo real a SU PADRE original (el envoltorio interior), no a la ranura:
+    // misma posición física, exacta, y sigue formando parte del sistema de reparto.
+    (openParent ?? slot).appendChild(card);
+    openParent = null;
     card.dataset.fichaState = 'closed';
     stage.classList.remove('is-open');
     stage.setAttribute('inert', '');
@@ -125,7 +148,7 @@ export function initFichaFlip(
       scale: true,
       absolute: true,
       onComplete: () => {
-        trigger?.focus();
+        trigger?.focus({ preventScroll: true }); // ver nota en `open`
         // El carrusel retoma SOLO cuando la tarjeta terminó de asentarse en su
         // slot: si se reanuda antes (con el Flip todavía animando), el slot
         // -que ya está siendo movido por el autoplay- es un blanco móvil y la

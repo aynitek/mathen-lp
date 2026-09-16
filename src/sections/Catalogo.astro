@@ -348,7 +348,16 @@ import { asset } from '../lib/asset';
          (el peor caso entre los 7 productos mide 441px de scrollHeight; se
          deja margen). */
       height: 28.5rem;
+      /*
+       * `clip` y no `hidden`. Con `hidden` el visor es un contenedor de scroll: no se
+       * puede arrastrar con el raton, pero SI se desplaza por programa. Cualquier cosa que
+       * enfoque o haga `scrollIntoView` sobre algo mas alto que el visor lo desplaza — que
+       * es como se rompia el carrusel al cerrar una ficha. `clip` recorta igual pero NO
+       * crea contenedor de scroll, asi que el desplazamiento es imposible de raiz.
+       * Se deja `hidden` delante como reserva para navegadores sin `clip`.
+       */
       overflow: hidden;
+      overflow: clip;
       /*
        * D5 / defecto-1: el track ocupa el canal COMPLETO (mismo x/width que el
        * resto del sitio, 144px/1152px a 1440px de ancho). Antes había padding

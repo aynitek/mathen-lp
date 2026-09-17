@@ -60,7 +60,7 @@
     "nombre": "Panel Sándwich de Poliuretano (PUR)",
     "slugCategoria": "paneles-termoaislantes",
     "tagline": "Aislamiento térmico en techo y muro.",
-    "descripcion": "Doble plancha de acero prepintado con recubrimiento Aluzinc AZ-150, con núcleo de espuma rígida de poliuretano de alta densidad inyectada a presión. Disponible para techo y para muro.",
+    "descripcion": "Doble plancha de acero prepintado con recubrimiento Aluzinc AZ-150, con núcleo de espuma rígida de poliuretano de alta densidad inyectada. Disponible para techo y para muro.",
     "specs": [
       {
         "etiqueta": "Caras",
@@ -72,11 +72,15 @@
       },
       {
         "etiqueta": "Núcleo",
-        "valor": "Espuma rígida de poliuretano de alta densidad, inyectada a presión"
+        "valor": "Espuma rígida de poliuretano de alta densidad, inyectada"
       },
       {
         "etiqueta": "Espesores de núcleo",
         "valor": "30, 40, 50, 75, 100, 150 y 200 mm"
+      },
+      {
+        "etiqueta": "Peralte (techo)",
+        "valor": "4 peraltes (crestas), 45 mm de altura"
       },
       {
         "etiqueta": "Unión (muro)",
@@ -89,11 +93,9 @@
     ],
     "beneficios": [
       "Doble cara en acero prepintado Aluzinc AZ-150",
-      "Núcleo de poliuretano de alta densidad inyectado a presión"
+      "Núcleo de poliuretano de alta densidad inyectado"
     ],
     "variantes": [
-      "Techo 2 peraltes",
-      "Techo 3 peraltes",
       "Techo 4 peraltes",
       "Muro machimbrado",
       "Núcleo 30 mm",
@@ -110,7 +112,7 @@
     "nombre": "Panel Sándwich de Poliestireno (EPS) — Termo Muro",
     "slugCategoria": "paneles-termoaislantes",
     "tagline": "Bajo peso, alta resistencia y luminosidad.",
-    "descripcion": "Doble plancha de acero prepintado Aluzinc AZ-150 con núcleo de poliestireno expandido de densidad 18 kg/m³, inyectado a presión. Nervaduras ligeras que aumentan la rigidez del conjunto. Techo o muro machimbrado.",
+    "descripcion": "Doble plancha de acero prepintado Aluzinc AZ-150 con núcleo de poliestireno expandido de densidad 18 kg/m³, pegado. Nervaduras ligeras que aumentan la rigidez del conjunto. Techo o muro machimbrado.",
     "specs": [
       {
         "etiqueta": "Caras",
@@ -122,11 +124,15 @@
       },
       {
         "etiqueta": "Núcleo",
-        "valor": "Poliestireno expandido (EPS), densidad 18 kg/m³, inyectado a presión"
+        "valor": "Poliestireno expandido (EPS), densidad 18 kg/m³, pegado"
       },
       {
         "etiqueta": "Espesores de núcleo (línea general techo/muro)",
         "valor": "30, 40, 50, 75, 100, 150 y 200 mm"
+      },
+      {
+        "etiqueta": "Peralte (techo)",
+        "valor": "4 peraltes (crestas), 45 mm de altura"
       },
       {
         "etiqueta": "Unión",
@@ -170,8 +176,6 @@
       "Rapidez de instalación"
     ],
     "variantes": [
-      "Techo 2 peraltes",
-      "Techo 3 peraltes",
       "Techo 4 peraltes",
       "Muro machimbrado",
       "Blanco",

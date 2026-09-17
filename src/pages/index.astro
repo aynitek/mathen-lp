@@ -2,12 +2,12 @@
 /**
  * Ensamblaje de la landing. Orden y ids canónicos: ver _brief/03-mapa-escenas.md.
  *
- * Arquitectura: un único <Canvas> WebGL fijo (z-0) montado una sola vez con client:load,
+ * Arquitectura: un único <Canvas> WebGL fijo (z-0) montado una sola vez, en diferido,
  * con todo el HTML scrolleando encima (z-10). El motor de scroll (Lenis + ScrollTrigger)
  * se arranca una sola vez desde aquí; el 3D lo consume vía scrollState, nunca vía el DOM.
  */
 import Base from '../layouts/Base.astro';
-import Scene from '../components/three/Scene';
+import SceneDiferida from '../components/three/SceneDiferida';
 
 import Nav from '../components/ui/Nav.astro';
 import ScrollProgress from '../components/ui/ScrollProgress';
@@ -25,8 +25,14 @@ import CotizaAhora from '../sections/CotizaAhora.astro';
 ---
 
 <Base>
-  {/* Canvas 3D: fijo, decorativo, detrás de todo el contenido */}
-  <Scene client:load />
+  {/*
+    Canvas 3D: fijo, decorativo, detrás de todo el contenido.
+
+    Se monta a través de `SceneDiferida`, que espera a que el titular del hero termine de
+    entrar: arrancar WebGL bloquea el hilo principal y congelaba esa animación a mitad.
+    El porqué completo, con las cifras medidas, está en SceneDiferida.tsx.
+  */}
+  <SceneDiferida client:load />
 
   <Nav />
   <ScrollProgress client:idle />

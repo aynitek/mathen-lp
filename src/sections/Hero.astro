@@ -64,4 +64,29 @@ const waHref = buildWhatsAppLink(contacto.whatsapp, WHATSAPP_GENERIC_MESSAGE);
   const root = document.getElementById('hero');
   revealIn(root);
   drawLinesIn(root);
+
+  /*
+   * Avisa cuando el titular ha terminado de entrar, para que la escena 3D se monte DESPUÉS
+   * (ver SceneDiferida.tsx): arrancar WebGL bloquea el hilo principal y congelaba esta
+   * animación a mitad de recorrido.
+   *
+   * Se mira el estado real de las líneas en vez de esperar una duración fija: así no hay un
+   * número mágico que se quede desfasado si cambia la animación, y con movimiento reducido
+   * —donde no hay animación y las líneas ya están opacas— avisa en el primer fotograma.
+   */
+  const avisar = () => window.dispatchEvent(new Event('hero:entrada-lista'));
+  const titular = root?.querySelector('[data-reveal][data-split]');
+  if (!titular) {
+    avisar();
+  } else {
+    const comprobar = () => {
+      const lineas = titular.querySelectorAll(':scope > div > div');
+      const completo =
+        lineas.length > 0 &&
+        Array.from(lineas).every((l) => parseFloat(getComputedStyle(l).opacity) > 0.99);
+      if (completo) avisar();
+      else requestAnimationFrame(comprobar);
+    };
+    requestAnimationFrame(comprobar);
+  }
 </script>

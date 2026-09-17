@@ -476,14 +476,26 @@ import { asset } from '../lib/asset';
         let loop: CarouselLoopHandle = createCarouselLoop(trackEl, slides, { speed: 55, reduced });
 
         let sectionInView = false;
-        let interacting = false;
+        /*
+         * Dos motivos DISTINTOS para pausar, cada uno con su bandera. Antes había una sola
+         * (`interacting`) para hover y foco, y un guardia en el "dejar de interactuar" que
+         * decía: si el foco sigue dentro del carrusel, no reanudes. Consecuencia medida: al
+         * cerrar la ficha, el foco vuelve al botón que la abrió —que está DENTRO del
+         * carrusel—, así que sacar el ratón ya no reanudaba nada y el carrusel se quedaba
+         * parado hasta que el usuario hacía clic en cualquier otro sitio. Con las dos
+         * separadas, cada motivo se levanta por su cuenta.
+         */
+        let punteroDentro = false;
+        let focoDeTecladoDentro = false;
         let fichaOpen = false;
         // D-A: sin pin no hay "al soltarse el pin, arranca el carrusel" — el hito
         // ahora es que el scrub del reparto llegue a progreso 1 (`onLeave` de abajo).
         // Con reduced-motion la fila ya está formada de entrada.
         let revealDone = reduced;
 
-        const wantsToPlay = () => sectionInView && !interacting && !fichaOpen && !reduced && revealDone && !loop.isStatic();
+        const interactuando = () => punteroDentro || focoDeTecladoDentro;
+        const wantsToPlay = () =>
+          sectionInView && !interactuando() && !fichaOpen && !reduced && revealDone && !loop.isStatic();
         const syncPlayback = () => {
           if (wantsToPlay()) loop.play();
           else loop.pause();
@@ -558,19 +570,44 @@ import { asset } from '../lib/asset';
         // hover Y focus-within pausan (un usuario de teclado no puede leer una
         // ficha que se está desplazando). Las flechas quedan dentro de esta misma
         // zona: siguen operables mientras el carrusel está en pausa.
-        const startInteracting = () => {
-          interacting = true;
-          syncPlayback();
+        /*
+         * El foco pausa SOLO si es foco de teclado (`:focus-visible`). Es la distinción que
+         * hace falta: cerrar la ficha devuelve el foco al botón por accesibilidad, pero si
+         * el usuario cerró con el ratón ese foco no es "estar navegando", y el carrusel no
+         * tiene por qué quedarse parado. Cerrando con Escape sí lo es, y entonces sigue en
+         * pausa — mover las tarjetas bajo el elemento que alguien acaba de enfocar con el
+         * teclado sería peor que el problema que se arregla.
+         * Si el navegador no entendiera `:focus-visible`, se pausa igual que antes.
+         */
+        const esFocoDeTeclado = (el: Element | null) => {
+          if (!el) return false;
+          try {
+            return el.matches(':focus-visible');
+          } catch {
+            return true;
+          }
         };
-        const stopInteracting = () => {
-          if (viewport.contains(document.activeElement)) return;
-          interacting = false;
+
+        viewport.addEventListener('pointerenter', () => {
+          punteroDentro = true;
           syncPlayback();
-        };
-        viewport.addEventListener('pointerenter', startInteracting);
-        viewport.addEventListener('pointerleave', stopInteracting);
-        viewport.addEventListener('focusin', startInteracting);
-        viewport.addEventListener('focusout', stopInteracting);
+        });
+        viewport.addEventListener('pointerleave', () => {
+          punteroDentro = false;
+          syncPlayback();
+        });
+        viewport.addEventListener('focusin', (e) => {
+          focoDeTecladoDentro = esFocoDeTeclado(e.target as Element);
+          syncPlayback();
+        });
+        viewport.addEventListener('focusout', (e) => {
+          // Tabular de un control a otro DENTRO del carrusel no es salir: sin esto habría
+          // un arranque y un frenazo en el mismo instante cada vez que se cambia de botón.
+          const destino = (e as FocusEvent).relatedTarget;
+          if (destino instanceof Node && viewport.contains(destino)) return;
+          focoDeTecladoDentro = false;
+          syncPlayback();
+        });
 
         prevBtn?.addEventListener('click', () => loop.step(-1));
         nextBtn?.addEventListener('click', () => loop.step(1));

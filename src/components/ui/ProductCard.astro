@@ -143,12 +143,6 @@ const tieneDetalle =
           <span aria-hidden="true">×</span>
         </button>
 
-        {/*
-          Indicador de que hay mas contenido. Decorativo: no sustituye a la barra real
-          -que sigue ahi para arrastrarla-, solo avisa. Ver fichaScrollHint.ts.
-        */}
-        <div class="ficha-scroll-hint" data-ficha-hint aria-hidden="true"><span></span></div>
-
         <div class="ficha-panel-media">
           <img src={imagen} alt={alt} loading="lazy" width="800" height="600" class="h-full w-full object-cover" />
         </div>
@@ -288,6 +282,12 @@ const tieneDetalle =
    *
    * Declarar `::-webkit-scrollbar` fuerza la barra clásica, siempre presente, en lugar de la
    * superpuesta; `scrollbar-width`/`scrollbar-color` hacen lo propio en Firefox.
+   *
+   * Aviso para quien venga: esto NO se puede comprobar con las pruebas automáticas. El
+   * navegador sin interfaz fuerza barras superpuestas y no pinta este estilo, así que allí
+   * la barra siempre mide 0px de ancho y parece que la regla no funciona. Llegó a añadirse
+   * un indicador propio dibujado a mano por esa duda, y hubo que quitarlo: en un navegador
+   * de escritorio real la regla SÍ se aplica y aparecían DOS barras. Se comprueba a ojo.
    * No hace falta añadir relleno extra: en escritorio la barra del cuerpo queda dentro del
    * relleno de 1.75rem del panel, y en móvil el contenido ya guarda esa misma distancia.
    */
@@ -340,47 +340,6 @@ const tieneDetalle =
       scrollbar-color: var(--color-paper-faint) var(--color-ink-700);
     }
   }
-  .ficha-scroll-hint {
-    /*
-     * En ESCRITORIO quien se desplaza es `.ficha-panel-body`, no el panel, asi que un hijo
-     * absoluto del panel se queda quieto: correcto.
-     */
-    position: absolute;
-    top: 1.75rem;
-    bottom: 1.75rem;
-    right: 0.5rem;
-    width: 6px;
-    border-radius: 9999px;
-    background: var(--color-ink-600);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-    z-index: 3;
-  }
-  .ficha-scroll-hint.is-visible {
-    opacity: 1;
-  }
-  .ficha-scroll-hint > span {
-    display: block;
-    width: 100%;
-    border-radius: 9999px;
-    background: var(--color-paper-faint);
-    will-change: transform;
-  }
-  @media (max-width: 767px) {
-    .ficha-scroll-hint {
-      /*
-       * En MOVIL el que se desplaza es el panel entero, y un hijo absoluto se iria con el
-       * contenido. El panel es `position: fixed` a pantalla completa, asi que fijando el
-       * indicador tambien se queda donde debe.
-       */
-      position: fixed;
-      top: 1.25rem;
-      bottom: 1.25rem;
-      right: 0.5rem;
-    }
-  }
-
   .ficha-panel-media {
     overflow: hidden;
     border-radius: 0.75rem;

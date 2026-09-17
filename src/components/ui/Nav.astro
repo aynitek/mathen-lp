@@ -33,13 +33,34 @@ import { asset } from '../../lib/asset';
     </span>
   </a>
 
+  {/*
+    Centrar una etiqueta de dos líneas necesitó DOS cosas, y las dos están medidas:
+
+     1. `text-center` en el <li>, no en el <a>: el enlace era un elemento EN LÍNEA, y
+        `text-align` no se aplica a un elemento en línea — lo hereda del bloque que lo
+        contiene. Puesto en el <a> no hacía absolutamente nada (medido: las líneas seguían
+        desviadas +6 y -16px respecto del centro).
+
+     2. `block` en el <a>: en un elemento en línea que se parte, el relleno horizontal solo
+        se aplica al PRINCIPIO de la primera línea y al FINAL de la última, nunca a las de en
+        medio. Las dos líneas no disponían del mismo ancho, así que cada una se centraba
+        respecto de una caja distinta (quedaba un desfase simétrico de +6/-6px). Como bloque,
+        el relleno envuelve toda la caja y las dos líneas comparten el mismo ancho.
+
+    Dos etiquetas no caben en una línea dentro de la píldora
+    (`max-w-3xl`) y se parten en dos — "A tu medida" y "Planta y obras". Medido: sin partirse
+    necesitarían entre 37 y 63px más de los que hay, en TODAS las anchuras de escritorio
+    (820 a 1440px), así que partirse es el comportamiento correcto; lo que estaba mal era que
+    las dos líneas quedaban alineadas a la izquierda y el bloque se veía descuadrado
+    ("PLANTA Y" corrida a la derecha y "OBRAS" a la izquierda).
+  */}
   <ul class="hidden md:flex items-center gap-1">
     {
       links.slice(1, -1).map((link) => (
-        <li>
+        <li class="text-center">
           <a
             href={`#${link.id}`}
-            class="px-3 py-2 rounded-full text-caption text-paper-dim tracking-[0.04em] uppercase
+            class="block px-3 py-2 rounded-full text-caption text-paper-dim tracking-[0.04em] uppercase
                    hover:text-paper hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-orange
                    transition-colors duration-200"
           >

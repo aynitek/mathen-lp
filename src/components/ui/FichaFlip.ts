@@ -100,6 +100,49 @@ export function initFichaFlip(
     });
   }
 
+  /**
+   * Elementos del fondo a los que ESTE componente les puso `inert`, para quitárselo solo a
+   * ellos al cerrar y no pisar los que ya lo tenían por su cuenta.
+   */
+  let fondoAislado: HTMLElement[] = [];
+
+  /**
+   * Aísla todo lo que no es la ficha mientras está abierta.
+   *
+   * La ficha es un diálogo modal (`role="dialog"`, `aria-modal="true"`), y el patrón ARIA
+   * exige que el tabulador no salga de él. Faltaba: tabulando hacia adelante desde el panel
+   * el foco se escapaba del catálogo y seguía por el resto de la página, con el diálogo
+   * todavía abierto encima.
+   *
+   * Se resuelve con `inert`, que es la vía NATIVA: el navegador saca del orden de
+   * tabulación, de los clics y del árbol de accesibilidad todo lo marcado. No se escribe un
+   * atrapador de foco a mano —interceptar Tab, calcular el primer y último elemento
+   * enfocable, reenviar el foco— porque eso es otra máquina de estados que mantener, y ya
+   * sabemos cómo acaban.
+   *
+   * Recorre desde el escenario de la ficha hasta `body` marcando a los HERMANOS de cada
+   * nivel: así queda accesible exactamente la rama que lleva a la ficha, y nada más.
+   */
+  function aislarFondo(activar: boolean) {
+    if (!activar) {
+      for (const el of fondoAislado) el.removeAttribute('inert');
+      fondoAislado = [];
+      return;
+    }
+    let nodo: HTMLElement | null = stage;
+    while (nodo && nodo !== document.body) {
+      const padre = nodo.parentElement;
+      if (!padre) break;
+      for (const hermano of Array.from(padre.children)) {
+        if (hermano === nodo || !(hermano instanceof HTMLElement)) continue;
+        if (hermano.hasAttribute('inert')) continue; // ya lo tenía: no es nuestro, no se toca
+        hermano.setAttribute('inert', '');
+        fondoAislado.push(hermano);
+      }
+      nodo = padre;
+    }
+  }
+
   function open(card: HTMLElement, trigger: HTMLElement) {
     asentarTransicionPendiente();
     if (openCard) return;
@@ -121,6 +164,7 @@ export function initFichaFlip(
     stage.appendChild(card);
     stage.classList.add('is-open');
     stage.removeAttribute('inert');
+    aislarFondo(true);
     card.dataset.fichaState = 'open';
     trigger.setAttribute('aria-expanded', 'true');
     setSiblingsHidden(card, true);
@@ -162,6 +206,7 @@ export function initFichaFlip(
     // misma posición física, exacta, y sigue formando parte del sistema de reparto.
     (openParent ?? slot).appendChild(card);
     openParent = null;
+    aislarFondo(false);
     card.dataset.fichaState = 'closed';
     stage.classList.remove('is-open');
     stage.setAttribute('inert', '');
@@ -189,10 +234,53 @@ export function initFichaFlip(
     document.removeEventListener('keydown', onKeydown);
   }
 
+  /** Lo que se puede enfocar DENTRO del panel, en orden de tabulación. */
+  const ENFOCABLE =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  function enfocablesDelPanel(): HTMLElement[] {
+    const panel = openCard?.querySelector<HTMLElement>('[data-ficha-panel]');
+    if (!panel) return [];
+    return Array.from(panel.querySelectorAll<HTMLElement>(ENFOCABLE)).filter((el) => {
+      const cs = getComputedStyle(el);
+      return cs.visibility !== 'hidden' && cs.display !== 'none';
+    });
+  }
+
   function onKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
       e.preventDefault();
       close();
+      return;
+    }
+    if (e.key !== 'Tab' || !openCard) return;
+
+    // Cierre del ciclo de tabulación. `inert` sobre el fondo ya impide llegar al resto de
+    // la página, pero no cierra el ciclo: al pasar del último elemento, el foco sale al
+    // navegador (`activeElement` pasa a ser `body`) y vuelve a entrar en la siguiente
+    // pulsación. El patrón de diálogo modal de la WAI pide que Tab en el último lleve al
+    // primero y Shift+Tab en el primero lleve al último, así que se rebota en los extremos.
+    // Son dos comprobaciones de borde, no un sistema de estado: fuera de los extremos, el
+    // navegador sigue gobernando el orden de tabulación.
+    const panel = openCard.querySelector<HTMLElement>('[data-ficha-panel]');
+    if (!panel) return;
+    const lista = enfocablesDelPanel();
+    if (lista.length === 0) {
+      e.preventDefault();
+      panel.focus({ preventScroll: true });
+      return;
+    }
+    const primero = lista[0];
+    const ultimo = lista[lista.length - 1];
+    const activo = document.activeElement;
+    const enElPanel = activo instanceof HTMLElement && panel.contains(activo);
+
+    if (e.shiftKey && (activo === primero || activo === panel || !enElPanel)) {
+      e.preventDefault();
+      ultimo.focus({ preventScroll: true });
+    } else if (!e.shiftKey && (activo === ultimo || !enElPanel)) {
+      e.preventDefault();
+      primero.focus({ preventScroll: true });
     }
   }
 

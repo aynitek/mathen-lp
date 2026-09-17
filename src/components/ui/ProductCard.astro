@@ -128,7 +128,8 @@ const tieneDetalle =
         class="ficha-panel"
         id={`ficha-panel-${producto.id}`}
         data-ficha-panel
-        role="region"
+        role="dialog"
+        aria-modal="true"
         aria-label={`Ficha técnica de ${producto.nombre}`}
         tabindex="-1"
       >
@@ -244,7 +245,11 @@ const tieneDetalle =
     position: absolute;
     inset: 0;
     opacity: 1;
-    transition: opacity 0.25s ease;
+    visibility: visible;
+    /* `visibility` sin retraso al APARECER: se ve desde el primer fotograma del fundido. */
+    transition:
+      opacity 0.25s ease,
+      visibility 0s linear 0s;
   }
   .ficha-panel {
     position: absolute;
@@ -297,6 +302,18 @@ const tieneDetalle =
   article[data-ficha-state='open'] .ficha-card-compact {
     opacity: 0;
     pointer-events: none;
+    /*
+     * `visibility: hidden` y no solo `opacity: 0`. Con opacidad 0 el bloque sigue en el
+     * orden de tabulación: con la ficha abierta se podía tabular hasta el botón "Ver ficha
+     * técnica" que ya no se ve, y el usuario de teclado acababa en un control invisible.
+     * `pointer-events: none` solo tapaba el caso del ratón.
+     * El retraso de 0.25s hace que se oculte AL TERMINAR el fundido, no al empezar: si no,
+     * el cruce compacto↔ficha se cortaría en seco.
+     */
+    visibility: hidden;
+    transition:
+      opacity 0.25s ease,
+      visibility 0s linear 0.25s;
   }
   article[data-ficha-state='open'] .ficha-panel {
     opacity: 1;

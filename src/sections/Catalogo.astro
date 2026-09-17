@@ -265,6 +265,13 @@ import { asset } from '../lib/asset';
     padding: 0;
     margin: 0;
   }
+  @media (pointer: coarse) {
+    /* 33px de alto es poco para el dedo. Solo con puntero basto: con ratón el tamaño actual
+       es correcto y agrandarlo desordenaría la fila de filtros sin necesidad. */
+    .filtro-opcion label {
+      min-height: 44px;
+    }
+  }
   .filtro-opcion input[type='radio'] {
     position: absolute;
     opacity: 0;
@@ -274,6 +281,7 @@ import { asset } from '../lib/asset';
   }
   .filtro-opcion label {
     display: inline-flex;
+    align-items: center;
     cursor: pointer;
     user-select: none;
     border-radius: 9999px;

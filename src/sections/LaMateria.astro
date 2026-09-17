@@ -13,7 +13,15 @@ const chips = ['AZ-150', '0.28 mm – 0.80 mm', 'Prepintado o natural'];
 const tickerItems = ['TR4', 'TR5', 'TR6', 'TR7', 'AZ-150', '0.28–0.80 MM', 'PREPINTADO', 'NATURAL'];
 ---
 
-<section id="la-materia" class="relative z-10 min-h-[140vh] flex items-center bg-transparent px-6 py-24 overflow-hidden">
+{/*
+  `min-h-screen` en móvil y la altura larga solo desde `md`. Estas secciones son más altas
+  que una pantalla para darle recorrido a la coreografía 3D, y en escritorio ese espacio lo
+  llenan las anotaciones técnicas (`hidden lg:block`). En móvil esas anotaciones no existen,
+  así que la sección quedaba un 40% más alta que su contenido: medido, 335px de negro vacío
+  aquí y 358px en "Dos planchas de acero". Acortándola en móvil el contenido la llena y la
+  coreografía simplemente pasa un poco más rápido, que en una pantalla pequeña se agradece.
+*/}
+<section id="la-materia" class="relative z-10 min-h-screen md:min-h-[140vh] flex items-center bg-transparent px-6 py-24 overflow-hidden">
   <div class="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] bg-gradient-to-r from-ink-950/95 from-30% via-ink-950/88 via-60% to-transparent" aria-hidden="true"></div>
 
   <div data-reveal-group class="relative bloque-izq">

@@ -111,7 +111,7 @@ const tieneDetalle =
               aria-controls={`ficha-panel-${producto.id}`}
               class="cursor-pointer select-none inline-flex items-center gap-1 text-caption uppercase tracking-[0.04em]
                      text-orange hover:text-orange-dim focus-visible:outline-2 focus-visible:outline-orange rounded
-                     bg-transparent border-0 p-0"
+                     bg-transparent border-0 p-0 ficha-trigger"
             >
               Ver ficha técnica
               <span aria-hidden="true">→</span>
@@ -351,6 +351,21 @@ const tieneDetalle =
   .ficha-panel-body {
     min-height: 0;
   }
+  /*
+   * El texto "Ver ficha técnica" medía 143x18px de área pulsable: es el acceso principal al
+   * catálogo y quedaba muy por debajo de los 44px recomendados para el dedo. Se agranda la
+   * zona sensible con un pseudoelemento en vez de con relleno: así no se mueve nada de la
+   * maquetación de la tarjeta, que va justa de alto.
+   */
+  .ficha-trigger {
+    position: relative;
+  }
+  .ficha-trigger::after {
+    content: '';
+    position: absolute;
+    inset: -14px -10px;
+  }
+
   .ficha-close {
     position: absolute;
     top: 1rem;
@@ -368,6 +383,14 @@ const tieneDetalle =
     font-size: 1.25rem;
     line-height: 1;
     cursor: pointer;
+  }
+  @media (pointer: coarse) {
+    /* Con el dedo, 36px se queda corto. En escritorio se deja como está: con el ratón la
+       precisión es otra y agrandarlo cambiaría el diseño sin motivo. */
+    .ficha-close {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
   }
   .ficha-close:hover {
     color: var(--color-orange);

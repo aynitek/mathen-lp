@@ -102,7 +102,15 @@ export function prefersReducedMotion() {
 
 export function isLowPower() {
   if (typeof window === 'undefined') return false;
-  return window.matchMedia('(max-width: 768px)').matches || navigator.hardwareConcurrency <= 4;
+  /*
+   * Se mira el LADO CORTO, no el ancho. Con `max-width: 768px` el mismo teléfono giraba a
+   * horizontal, pasaba a 844px de ancho y dejaba de considerarse móvil: recibía la calidad
+   * completa de escritorio (postprocesado, entorno procedural, geometría de detalle) sobre
+   * una GPU de móvil. Medido en horizontal: ~49% de fotogramas con tirones, peor que en
+   * vertical. El lado corto no cambia al girar, que es justo lo que hace falta aquí.
+   */
+  const ladoCorto = Math.min(window.innerWidth, window.innerHeight);
+  return ladoCorto <= 768 || navigator.hardwareConcurrency <= 4;
 }
 
 /** Arranca Lenis + ScrollTrigger. Idempotente. */

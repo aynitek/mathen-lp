@@ -103,6 +103,37 @@ function toVec3(p: [number, number, number]): THREE.Vector3 {
   return new THREE.Vector3(p[0], p[1], p[2]);
 }
 
+/**
+ * Proporción para la que está compuesta la escena. Todas las poses de cámara se eligieron
+ * mirando una pantalla apaisada.
+ */
+const ASPECTO_REF = 16 / 9;
+/**
+ * Tope del ángulo vertical. Más allá la perspectiva se deforma de forma evidente: las líneas
+ * rectas de la nave empiezan a curvarse en los bordes y deja de leerse como una nave.
+ */
+const FOV_MAX = 58;
+
+/**
+ * Ajusta el ángulo de cámara a la proporción de la pantalla.
+ *
+ * En three.js el `fov` es VERTICAL, así que en una pantalla estrecha y alta el campo
+ * HORIZONTAL se encoge muchísimo: con el hero a fov 36, en escritorio (16:9) se abarcan unos
+ * 55° de ancho y en un móvil vertical (390x844) solo unos 17°. Por eso en el teléfono la
+ * nave se veía pegada a la cara y se perdía la composición: no era falta de calidad, era que
+ * la cámara nunca supo que la pantalla había cambiado de forma.
+ *
+ * Se compensa abriendo el ángulo vertical para recuperar campo horizontal, con tope para no
+ * deformar. No se compensa del todo a propósito: recuperar los 55° exigiría un fov de ~102°,
+ * que convierte la nave en un ojo de pez.
+ */
+function fovParaAspecto(fovBase: number, aspecto: number): number {
+  if (!Number.isFinite(aspecto) || aspecto <= 0 || aspecto >= ASPECTO_REF) return fovBase;
+  const tanHorizontal = Math.tan((fovBase * Math.PI) / 360) * ASPECTO_REF;
+  const compensado = (Math.atan(tanHorizontal / aspecto) * 360) / Math.PI;
+  return Math.min(compensado, FOV_MAX);
+}
+
 /** Traduce `progress` (0→1) al parámetro uniforme que esperan las curvas + el índice de tramo para el fov. */
 function resolveSegment(progress: number): { u: number; i: number; localT: number } {
   const p = THREE.MathUtils.clamp(progress, 0, 1);
@@ -141,7 +172,7 @@ export default function Rig(): ReactElement | null {
     camera.position.set(...REDUCED_POSE.pos);
     camera.lookAt(...REDUCED_POSE.target);
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = REDUCED_POSE.fov;
+      camera.fov = fovParaAspecto(REDUCED_POSE.fov, camera.aspect);
       camera.updateProjectionMatrix();
     }
   }, [camera, reduced]);
@@ -152,7 +183,10 @@ export default function Rig(): ReactElement | null {
     const { u, i, localT } = resolveSegment(scrollState.progress);
     const targetPos = posCurve.getPoint(u);
     const targetLook = targetCurve.getPoint(u);
-    const fov = THREE.MathUtils.lerp(ANCHORS[i].fov, ANCHORS[i + 1].fov, localT);
+    const fovBase = THREE.MathUtils.lerp(ANCHORS[i].fov, ANCHORS[i + 1].fov, localT);
+    // `camera.aspect` lo mantiene al día React Three Fiber al redimensionar o girar el
+    // teléfono, así que esto se readapta solo sin escuchar nada.
+    const fov = fovParaAspecto(fovBase, camera.aspect);
 
     dampVector3(camera.position, targetPos, 4.5, delta);
     dampVector3(currentLook.current, targetLook, 4.5, delta);

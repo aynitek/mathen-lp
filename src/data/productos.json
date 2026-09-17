@@ -4,7 +4,7 @@
     "nombre": "Calamina y Plancha Aluzinc AZ-150",
     "slugCategoria": "calaminas-planchas",
     "tagline": "No se oxida. Fabricada a tu medida.",
-    "descripcion": "Plancha con alma de acero estructural de calidad AZ-150, recubierta en Aluzinc: no se oxida ni se corroe. Formato TR4, TR5 o TR6, recta o curva, natural o prepintada, fabricada a la medida del cliente.",
+    "descripcion": "Plancha con alma de acero estructural de calidad AZ-150, recubierta en Aluzinc: no se oxida ni se corroe. Formato TR4, TR5, TR6 o TR7, recta o curva, natural o prepintada, fabricada a la medida del cliente.",
     "specs": [
       {
         "etiqueta": "Material",
@@ -12,7 +12,7 @@
       },
       {
         "etiqueta": "Formato",
-        "valor": "TR4, TR5, TR6"
+        "valor": "TR4, TR5, TR6, TR7"
       },
       {
         "etiqueta": "Forma",
@@ -24,11 +24,11 @@
       },
       {
         "etiqueta": "Ancho útil",
-        "valor": "1000 mm [[DATO PENDIENTE: confirmar unidad — la ficha original dice '1000 cm', ver sección H]]"
+        "valor": "1000 mm / 1030 mm"
       },
       {
         "etiqueta": "Espesor",
-        "valor": "0.30 mm a 0.60 mm"
+        "valor": "0.28 mm a 0.80 mm"
       },
       {
         "etiqueta": "Longitud",
@@ -42,6 +42,7 @@
     ],
     "beneficios": [
       "No se oxida ni se corroe",
+      "Vida útil de 15 años",
       "Diseño geométrico reforzado",
       "Fabricación a la medida del cliente"
     ],
@@ -49,6 +50,7 @@
       "TR4",
       "TR5",
       "TR6",
+      "TR7",
       "Natural",
       "Prepintado",
       "Recta",

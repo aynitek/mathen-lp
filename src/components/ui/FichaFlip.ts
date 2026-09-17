@@ -58,6 +58,30 @@ export function initFichaFlip(
    * tarjeta quedaba desconectada para siempre; no se recuperaba ni cambiando de filtro.
    */
   let openParent: HTMLElement | null = null;
+
+  /**
+   * Transición en vuelo (la timeline que devuelve `Flip.from`).
+   *
+   * `close()` pone `openCard = null` en el acto, pero la animación dura 0.55s. En esa
+   * ventana, `open()` de otra tarjeta pasaba el guardia `if (openCard) return` y arrancaba,
+   * mientras el `onComplete` del cierre anterior llegaba DESPUÉS y ejecutaba
+   * `onOpenChange(false)` — reanudando el carrusel con una ficha recién abierta y dejando
+   * dos tarjetas marcadas como abiertas a la vez. Reproducido 2 de 29 intentos cerrando una
+   * ficha y abriendo otra con ~150ms de diferencia: hace falta insistir mucho, pero ocurre y
+   * no se recupera solo.
+   *
+   * En vez de ignorar el clic (que se sentiría como un clic perdido), se ASIENTA la
+   * transición pendiente: se la lleva a su estado final, lo que dispara su `onComplete` y
+   * deja el estado coherente, y entonces empieza la nueva. La interfaz sigue respondiendo al
+   * instante y nunca hay dos transiciones vivas.
+   */
+  let transicion: gsap.core.Timeline | null = null;
+
+  function asentarTransicionPendiente() {
+    const t = transicion;
+    transicion = null;
+    if (t && t.isActive()) t.progress(1);
+  }
   let openTrigger: HTMLElement | null = null;
 
   function siblingsOf(card: HTMLElement): HTMLElement[] {
@@ -77,6 +101,7 @@ export function initFichaFlip(
   }
 
   function open(card: HTMLElement, trigger: HTMLElement) {
+    asentarTransicionPendiente();
     if (openCard) return;
     const slot = card.closest<HTMLElement>('[data-carousel-slide]');
     if (!slot) return;
@@ -103,7 +128,7 @@ export function initFichaFlip(
     // El cruce compacto↔ficha lo resuelve el CSS (opacity/visibility en
     // `article[data-ficha-state]`, ver ProductCard.astro): Flip solo anima la
     // caja del <article>.
-    Flip.from(state, {
+    transicion = Flip.from(state, {
       duration: reduced ? 0 : 0.65,
       ease: 'power3.inOut',
       scale: true,
@@ -124,6 +149,7 @@ export function initFichaFlip(
   }
 
   function close() {
+    asentarTransicionPendiente();
     if (!openCard || !openSlot) return;
     const card = openCard;
     const slot = openSlot;
@@ -142,7 +168,7 @@ export function initFichaFlip(
     trigger?.setAttribute('aria-expanded', 'false');
     setSiblingsHidden(card, false);
 
-    Flip.from(state, {
+    transicion = Flip.from(state, {
       duration: reduced ? 0 : 0.55,
       ease: 'power3.inOut',
       scale: true,

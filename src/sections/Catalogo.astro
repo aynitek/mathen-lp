@@ -431,6 +431,7 @@ import { asset } from '../lib/asset';
   import { revealIn } from '../components/ui/scrollReveal';
   import { createCarouselLoop, type CarouselLoopHandle } from '../components/ui/CarouselLoop';
   import { initFichaFlip } from '../components/ui/FichaFlip';
+  import { autoAvanzarEnTactil } from '../components/ui/carouselTactil';
 
   gsap.registerPlugin(ScrollTrigger, Flip);
 
@@ -468,6 +469,9 @@ import { asset } from '../lib/asset';
         // Solo falta la ficha técnica, que sigue funcionando (a pantalla completa,
         // ver ProductCard.astro), y no requiere ScrollTrigger ni bucle.
         initFichaFlip(root, stage, () => {});
+        // …y un empujón suave para que las tarjetas no se queden quietas. No sustituye al
+        // scroll nativo: lo usa. Ver carouselTactil.ts.
+        autoAvanzarEnTactil(track);
       } else {
         // Desktop: revelado por scroll SIN pin (D-A) + carrusel infinito a mano (D4).
         // (referencia no-nula: `rebuildLoop`, definida más abajo, la captura en un

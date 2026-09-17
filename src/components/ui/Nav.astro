@@ -114,6 +114,21 @@ import { asset } from '../../lib/asset';
   // La nav flotante tapaba el texto de las secciones al pasar por debajo.
   // Se esconde al bajar y vuelve al subir (o al llegar arriba del todo).
   const nav = document.querySelector('[data-nav]');
+
+  /*
+   * El menú móvil es un <details>: al pulsar un enlace, el navegador navega al ancla pero
+   * NO lo cierra, así que el panel se quedaba abierto tapando la sección recién elegida.
+   * Se cierra a mano al pulsar cualquier enlace de dentro.
+   *
+   * Se escucha en el <details> y no en cada enlace: un solo oyente, y sigue funcionando si
+   * algún día cambian los enlaces del menú.
+   */
+  const menu = nav?.querySelector('details');
+  menu?.addEventListener('click', (e) => {
+    const destino = e.target instanceof Element ? e.target.closest('a[href]') : null;
+    if (destino && menu.contains(destino)) menu.open = false;
+  });
+
   if (nav && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     let last = window.scrollY;
     let ticking = false;

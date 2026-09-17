@@ -35,8 +35,16 @@ const waHref = buildWhatsAppLink(contacto.whatsapp, WHATSAPP_GENERIC_MESSAGE);
     <path data-draw d="M90,100 L100,100 L100,90" vector-effect="non-scaling-stroke" fill="none" stroke="currentColor" stroke-width="1.5" />
   </svg>
 
+  {/*
+    `leading-[1.12]` y no `leading-[0.95]`. SplitText envuelve cada línea en una máscara con
+    `overflow: clip` del alto EXACTO de la caja de línea, y con un interlineado menor que el
+    cuerpo de letra esa caja es más baja que la tinta: los rasgos descendentes se cortaban en
+    plano. Medido a 1440px: la máscara medía 82px y el contenido necesitaba 95px — 13px de
+    recorte, visible en la cola de la "y" de "proyecto" y en la "p".
+    El mismo defecto estaba en los cinco h2 partidos del sitio (9px de recorte cada uno).
+  */}
   <div data-reveal-group class="relative max-w-5xl text-center flex flex-col items-center">
-    <h1 data-reveal data-split="lines" class="on-canvas font-display font-bold text-display-xl leading-[0.95] tracking-[-0.02em] text-paper text-balance">
+    <h1 data-reveal data-split="lines" class="on-canvas font-display font-bold text-display-xl leading-[1.12] tracking-[-0.02em] text-paper text-balance">
       Coberturas a medida de tu proyecto
     </h1>
 

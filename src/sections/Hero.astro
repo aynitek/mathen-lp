@@ -2,7 +2,14 @@
 /**
  * Escena 1/8 — `hero` (scroll global 0.00–0.12).
  * 3D: plancha Aluzinc plana en reposo, cámara acercándose (ver mapa-escenas).
- * H1 único de la página — variante 2 del brief: "Fabricado a la medida exacta de tu obra".
+ * H1 único de la página. Texto entregado por el cliente (17-09-2026):
+ * "COBERTURAS A MEDIDA DE TU PROYECTO : calaminas pre pintadas en aluzinc y aluminio, termo
+ *  techo y termo muro tipo sandwich, policarbonatos, placa colaborante, termoacustico UPVC,
+ *  fabricados en Perú y entregas a nivel nacional."
+ * Se respeta su redacción; solo se corrige ortografía (prepintadas, sándwich, termoacústico),
+ * se escribe "Aluzinc" como en el resto del sitio, y el cierre pasa a frase aparte para que
+ * no cuelgue de la enumeración. Las mayúsculas del original son énfasis suyo, no un estilo:
+ * el H1 del sitio va en caja normal.
  */
 import Button from '../components/ui/Button.astro';
 import { contacto } from '../data/publico';
@@ -30,12 +37,13 @@ const waHref = buildWhatsAppLink(contacto.whatsapp, WHATSAPP_GENERIC_MESSAGE);
 
   <div data-reveal-group class="relative max-w-5xl text-center flex flex-col items-center">
     <h1 data-reveal data-split="lines" class="on-canvas font-display font-bold text-display-xl leading-[0.95] tracking-[-0.02em] text-paper text-balance">
-      Fabricado a la medida exacta de tu obra
+      Coberturas a medida de tu proyecto
     </h1>
 
     <p data-reveal class="mt-6 text-body-lg text-paper-dim max-w-2xl">
-      Planchas Aluzinc, paneles sándwich de poliuretano y poliestireno, placa colaborante, policarbonato y coberturas UPVC.
-      Fabricamos cada línea en el espesor, formato y largo que tu proyecto necesita.
+      Calaminas prepintadas en Aluzinc y aluminio, termo techo y termo muro tipo sándwich,
+      policarbonatos, placa colaborante y termoacústico UPVC. Fabricados en Perú, con entregas
+      a nivel nacional.
     </p>
 
     <div data-reveal class="mt-9 flex flex-col sm:flex-row items-center gap-4">

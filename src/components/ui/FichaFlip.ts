@@ -16,6 +16,7 @@
  */
 import gsap from 'gsap';
 import { Flip } from 'gsap/Flip';
+import { activarIndicador, desactivarIndicador } from './fichaScrollHint';
 
 let registered = false;
 function ensureRegistered() {
@@ -185,6 +186,9 @@ export function initFichaFlip(
         // pagina quieta, dejando las demas tarjetas cortadas por arriba. Ademas no se
         // revertia solo — quedaba asi hasta recargar.
         panel?.focus({ preventScroll: true });
+        // Se engancha al terminar de abrir: antes, el panel todavia se esta redimensionando
+        // con el Flip y las medidas del desplazamiento no serian las definitivas.
+        activarIndicador(card);
       },
     });
 
@@ -206,6 +210,7 @@ export function initFichaFlip(
     // misma posición física, exacta, y sigue formando parte del sistema de reparto.
     (openParent ?? slot).appendChild(card);
     openParent = null;
+    desactivarIndicador();
     aislarFondo(false);
     card.dataset.fichaState = 'closed';
     stage.classList.remove('is-open');

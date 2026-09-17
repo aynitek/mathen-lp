@@ -130,6 +130,7 @@ const tieneDetalle =
         data-ficha-panel
         role="dialog"
         aria-modal="true"
+        data-lenis-prevent
         aria-label={`Ficha técnica de ${producto.nombre}`}
         tabindex="-1"
       >
@@ -141,6 +142,12 @@ const tieneDetalle =
         >
           <span aria-hidden="true">×</span>
         </button>
+
+        {/*
+          Indicador de que hay mas contenido. Decorativo: no sustituye a la barra real
+          -que sigue ahi para arrastrarla-, solo avisa. Ver fichaScrollHint.ts.
+        */}
+        <div class="ficha-scroll-hint" data-ficha-hint aria-hidden="true"><span></span></div>
 
         <div class="ficha-panel-media">
           <img src={imagen} alt={alt} loading="lazy" width="800" height="600" class="h-full w-full object-cover" />
@@ -264,7 +271,116 @@ const tieneDetalle =
     border-radius: inherit;
     padding: 1.75rem;
     transition: opacity 0.25s ease;
+
   }
+
+  /*
+   * ── BARRA DE DESPLAZAMIENTO SIEMPRE VISIBLE ─────────────────────────────────
+   * Las fichas tienen más contenido del que cabe y no había ninguna señal de ello: la barra
+   * del sistema es superpuesta, solo aparece al empezar a desplazar, se desvanece enseguida
+   * y encima es oscura sobre un panel oscuro.
+   *
+   * Va en LOS DOS selectores porque el elemento que se desplaza NO es el mismo en cada
+   * tamaño, y medirlo fue lo que costó: en escritorio la ficha se expande en horizontal y
+   * quien desborda es el CUERPO (`.ficha-panel-body`: 398px de alto con 900 de contenido,
+   * 502px de sobra), mientras el panel exterior encaja justo y nunca desborda. En móvil el
+   * panel ocupa la pantalla entera y es él quien se desplaza (383px de sobra).
+   *
+   * Declarar `::-webkit-scrollbar` fuerza la barra clásica, siempre presente, en lugar de la
+   * superpuesta; `scrollbar-width`/`scrollbar-color` hacen lo propio en Firefox.
+   * No hace falta añadir relleno extra: en escritorio la barra del cuerpo queda dentro del
+   * relleno de 1.75rem del panel, y en móvil el contenido ya guarda esa misma distancia.
+   */
+  .ficha-panel,
+  .ficha-panel-body {
+    /*
+     * Al llegar al final de la ficha, la rueda sobrante se encadenaba a la pagina y esta
+     * empezaba a moverse por debajo del dialogo (medido: 200px). `contain` corta ese
+     * encadenamiento sin bloquear nada mas: dentro de la ficha se sigue desplazando con
+     * normalidad, simplemente deja de arrastrar lo que hay detras.
+     */
+    overscroll-behavior: contain;
+  }
+  .ficha-panel::-webkit-scrollbar,
+  .ficha-panel-body::-webkit-scrollbar {
+    width: 10px;
+  }
+  .ficha-panel::-webkit-scrollbar-track,
+  .ficha-panel-body::-webkit-scrollbar-track {
+    background: var(--color-ink-700);
+    border-radius: 9999px;
+  }
+  .ficha-panel::-webkit-scrollbar-thumb,
+  .ficha-panel-body::-webkit-scrollbar-thumb {
+    background: var(--color-paper-faint);
+    border-radius: 9999px;
+    /* Borde transparente recortado al relleno: adelgaza el pulgar sin encoger su area de
+       agarre, que sigue siendo la del ancho completo. */
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  .ficha-panel::-webkit-scrollbar-thumb:hover,
+  .ficha-panel-body::-webkit-scrollbar-thumb:hover {
+    background: var(--color-orange);
+    background-clip: padding-box;
+  }
+
+  /*
+   * `scrollbar-width`/`scrollbar-color` van SOLO para los navegadores que no entienden
+   * `::-webkit-scrollbar` (Firefox). Declararlas sin esa condicion parecia lo correcto y era
+   * justo lo que rompia el arreglo: en Chromium moderno, en cuanto se declara una de las
+   * dos, las reglas `::-webkit-scrollbar` se ignoran por completo — y son esas las que
+   * fuerzan la barra CLASICA. Medido: con ambas declaradas la barra seguia ocupando 0px de
+   * maquetacion, es decir seguia siendo superpuesta y desvaneciendose.
+   */
+  @supports not selector(::-webkit-scrollbar) {
+    .ficha-panel,
+    .ficha-panel-body {
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-paper-faint) var(--color-ink-700);
+    }
+  }
+  .ficha-scroll-hint {
+    /*
+     * En ESCRITORIO quien se desplaza es `.ficha-panel-body`, no el panel, asi que un hijo
+     * absoluto del panel se queda quieto: correcto.
+     */
+    position: absolute;
+    top: 1.75rem;
+    bottom: 1.75rem;
+    right: 0.5rem;
+    width: 6px;
+    border-radius: 9999px;
+    background: var(--color-ink-600);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 3;
+  }
+  .ficha-scroll-hint.is-visible {
+    opacity: 1;
+  }
+  .ficha-scroll-hint > span {
+    display: block;
+    width: 100%;
+    border-radius: 9999px;
+    background: var(--color-paper-faint);
+    will-change: transform;
+  }
+  @media (max-width: 767px) {
+    .ficha-scroll-hint {
+      /*
+       * En MOVIL el que se desplaza es el panel entero, y un hijo absoluto se iria con el
+       * contenido. El panel es `position: fixed` a pantalla completa, asi que fijando el
+       * indicador tambien se queda donde debe.
+       */
+      position: fixed;
+      top: 1.25rem;
+      bottom: 1.25rem;
+      right: 0.5rem;
+    }
+  }
+
   .ficha-panel-media {
     overflow: hidden;
     border-radius: 0.75rem;
